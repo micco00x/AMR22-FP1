@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 from utils import json2dict
-from python.multi_level_surface_map import MultiLevelSurfaceMap
+from multi_level_surface_map import MultiLevelSurfaceMap
 
 def get_coordinates(position, size):
     X = [[[0, 1, 0], [0, 0, 0], [1, 0, 0], [1, 1, 0]],
