@@ -1,0 +1,24 @@
+{
+    "boxes" : {
+        "floor0" : {
+            "position" : [0.8, 0.8, 0],
+            "size" : [10, 10, 0]
+        },
+        "floor1" : {
+            "position" : [1, 1, 10],
+            "size" : [10, 10, 0]
+        },
+        "random_cube" : {
+            "position" : [10, 7, 6],
+            "size" : [5, 2, 4]
+        },
+        "random_cube2" : {
+            "position" : [1, 2, 8],
+            "size" : [5, 2, 4]
+        },
+        "random_cube3" : {
+            "position" : [9, 2, 8],
+            "size" : [5, 2, 4]
+        }
+    }
+}
