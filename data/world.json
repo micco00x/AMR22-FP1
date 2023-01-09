@@ -19,6 +19,10 @@
         "random_cube3" : {
             "position" : [9, 2, 8],
             "size" : [5, 2, 4]
+        },
+        "random_cube4" : {
+            "position" : [-5, -3, 8],
+            "size" : [5, 2, 4]
         }
     }
 }

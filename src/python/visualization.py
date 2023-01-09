@@ -36,38 +36,34 @@ def get_poly_collection(scene):
     # return Poly3DCollection(collection, shade=True) # ToDo: better but works only with matplotlib v.3.7 and above
 
 
-def main(world_json,
-         resolution,
-         world_dimension):
+def main(world_json, resolution):
 
+    # Multilevel map plot
+    map = MultiLevelSurfaceMap(world_json, resolution)
+    map.plot()
+    
     # World plot
     world_figure = plt.figure('Wold of cubes')
     ax = plt.subplot(projection='3d')
     scene = json2dict(world_json)['boxes']
     boxes = get_poly_collection(scene)
     ax.add_collection(boxes)
-    
+
     # Axes labels
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-        
     # Visualization boundaries:
-    ax.set_xlim([0,world_dimension])
-    ax.set_ylim([0,world_dimension])
-    ax.set_zlim([0,world_dimension])
-
-    # Multilevel map plot
-    map = MultiLevelSurfaceMap((world_dimension,world_dimension), world_json, resolution)
-    map.plot()
+    ax.set_xlim([map.world_dimensions[0][0], map.world_dimensions[0][1]])
+    ax.set_ylim([map.world_dimensions[1][0], map.world_dimensions[1][1]])
+    ax.set_zlim([map.world_dimensions[2][0], map.world_dimensions[2][1]])
     
     plt.show()
-    
+
 
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--world-json', type=Path, default='data/world.json', help='json file containing the information about the boxes contained in the world')
-    parser.add_argument('--world-dimension', type=int, default=15, help='Set the max value for the axes')
     parser.add_argument('--resolution', type=float, default=0.02, help='Set the map resolution')
     opt = parser.parse_args()
     return opt
