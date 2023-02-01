@@ -97,7 +97,7 @@ def Motion_Primitives(vertex):
     support = vertex.f_sup 
     Saggital_axis = (vertex.f_swg[3] + vertex.f_sup[3]) / 2 # PER DEFINIRE IL SAGGITAL AXIS DEVO TOGLIERMI UN DUBBIO SU COME È  MESSO IL SISTEMA DI RIFERIMENTO
 
-    U_r = [[]]
+    U_r = [[ggg]]
 
     U_l = []
 
