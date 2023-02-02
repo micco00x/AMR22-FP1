@@ -2,17 +2,25 @@ import numpy as np
 from numpy.random import randint
 import matplotlib.pyplot as plt
 from numpy.linalg import norm
+from numpy import transpose,  cos ,sin
 
-# Stance = (f_swing, f_support)
-#Footsetp f = (X_f, Y_f, Z_f, Theta_f)
+
+"""
+Stance = (f_swing, f_support)
+Footstep f = (X_f, Y_f, Z_f, Theta_f)
+
+For all the task we will have different reference frames. To go from the robot frame ( or its feet frames) to
+the word (immutable) frame it will be used a rotation matrix [[cos(a) -sin(a) 0],[sin(a) cos(a) 0], [0 0 1]] 
+where a is the angle that describe the saggital axis, computed as the mean of the yawn angle of the two feet.
+The yawn angle of each foot is the 4th element of a footstep f, and is computed with respect the starting position
+of the robot. In fact the initial stance of the robot is always with both feet along the x axis of word frame,
+therefore both Theta_f = 0
+"""
 
 class Tree():
     def __init__(self, f_swg_ini, f_sup_ini):
         self.root = Node(f_swg_ini,f_sup_ini)
     
-    def expand(self,data):
-        pass
-
 
 
 class Node():
@@ -25,6 +33,29 @@ class Node():
         self.parent = None
         self.children = []
         self.f_swg_id = 'Right' # It always starts by moving right foot first
+    
+    # def expand(self, new_f_swg, new_f_sup):
+    #     new_node = Node(new_f_swg, new_f_sup)
+    #     new_node.parent = self
+    #     if self.f_swg_id == 'Right':
+    #         new_node.f_swg_id = 'Left'
+    #     if self.f_swg_id == 'Left':
+    #         new_node.f_swg_id ='Right'
+
+    #     self.children = [self.children, new_node]
+
+    def Is_Child(self, parent_node):
+        parent_node.children.append(self)
+        if parent_node.f_swg_id == 'Right':
+            self.f_swg_id = 'Left'
+        if parent_node.f_swg_id == 'Left':
+            self.f_swg_id = 'Right'
+
+
+    
+    def Is_parent(self, child_node):
+        child_node.parent = self
+
 
 
 
@@ -89,17 +120,23 @@ def Vertex_to_Point_Distance(vertex, point, k = 3):
 def Motion_Primitives(vertex):
     """
     Set of primitives U: 20 possible swing foot landing w.r.t the actual support foot
-    For now lets assume 5 possible forward distances, 2 side distances and 2 possible angle 
-    U_r = primitives for right foot
-    U_l = primitives for left foot
+    For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
+    The 2 possible angles are: the saggital_axis angle and (the sggital_axis + 30°)
+    The 2 possible side distances are: 12 units and 24 units from f_sup along y axis of f_sup, if f_sup is 'Right'
+                                      -12 units and -24 units  if f_sup is 'Left
+    The 5 possible forward distances are: -10,0,10,20,30 units along x axis of f_sup
+    U_r = primitives for f_sup = 'Right'
+    U_l = primitives for f_sup = 'Left'
+    (Recall: foot dimensions are 12x7 units)
     """
     swing = vertex.f_swg
     support = vertex.f_sup 
-    Saggital_axis = (vertex.f_swg[3] + vertex.f_sup[3]) / 2 # PER DEFINIRE IL SAGGITAL AXIS DEVO TOGLIERMI UN DUBBIO SU COME È  MESSO IL SISTEMA DI RIFERIMENTO
+    X_sup, Y_sup, Z_sup, Theta_sup = support
+    Saggital_axis = (vertex.f_swg[3] + vertex.f_sup[3]) / 2 
 
-    U_r = [[ggg]]
+    U_r = [[]]
 
-    U_l = []
+    U_l = [[X_sup + 30, Y_sup - 12]]
 
     if vertex.f_swg_id == 'Right':
         pass
@@ -118,4 +155,35 @@ def Feasibility_check(f):
     #R2: stance feasibility, f is kinematically admissible from previous footstep 
     #R3: 
     pass
+
+def R1_feasibility(f):#,Map):
+    """
+    This verifies that the footstep f is fully in contact within a single horizontal patch.
+    To guarantee this, each cell of the map belonging to or overlapping with the footprint
+    must have the same height Z. The foorprint is 12x7 units , but let's use 13x9 to overcome
+    small errors in postion
+    """
+    Saggital_axis = (f[3] + f[3]) / 2
+    a = Saggital_axis
+    rotation_matrix = np.array(([cos(a),-sin(a)], [sin(a), cos(a)]))
+    x_range = list(range(-6, +6+1))
+    y_range = list(range(-4, +4+1))
+    footstep = np.zeros([2,(len(x_range)*len(y_range))])
+    counter = -1
+    for j in x_range:
+        for k in y_range:
+            counter += 1
+            footstep[:,counter] = np.array([j,k])
+
+    for i in range(0,footstep.shape[1]):
+        position = np.rint(np.matmul(rotation_matrix, footstep[:,i]))
+        position[0] = position[0] + f[0]
+        position[1] = position[1] + f[1]
+        print(footstep[:,i], position)
+        ##ADESSO DEVO VERIFICARE OGNI POSITION
+    return footstep
+
+
+
+
 
