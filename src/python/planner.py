@@ -16,6 +16,8 @@ The yawn angle of each foot is the 4th element of a footstep f, and is computed 
 of the robot. In fact the initial stance of the robot is always with both feet along the x axis of word frame,
 therefore both Theta_f = 0
 """
+pi = np.pi
+resolution = 0.5
 
 class Tree():
     def __init__(self, f_swg_ini, f_sup_ini):
@@ -133,10 +135,20 @@ def Motion_Primitives(vertex):
     support = vertex.f_sup 
     X_sup, Y_sup, Z_sup, Theta_sup = support
     Saggital_axis = (vertex.f_swg[3] + vertex.f_sup[3]) / 2 
+    s = Saggital_axis
 
-    U_r = [[]]
+    U_r = [[X_sup + 30, Y_sup + 12, s], [X_sup + 20, Y_sup + 12, s], [X_sup + 10, Y_sup + 12, s], [X_sup , Y_sup + 12, s], [X_sup -10, Y_sup + 12, s],
+           [X_sup + 30  , Y_sup + 12, s + (pi/6)], [X_sup + 20, Y_sup + 12, s + (pi/6)], [X_sup + 10, Y_sup + 12, s + (pi/6)], [X_sup , Y_sup + 12, s + (pi/6)], [X_sup -10, Y_sup - 12, s + (pi/6)],
+           [X_sup + 30, Y_sup - 24, s], [X_sup + 20, Y_sup - 24, s], [X_sup + 10, Y_sup - 24, s], [X_sup , Y_sup - 24, s], [X_sup -10, Y_sup - 24, s],
+           [X_sup + 30  , Y_sup - 24, s + (pi/6)], [X_sup + 20, Y_sup - 24, s + (pi/6)], [X_sup + 10, Y_sup - 24, s + (pi/6)], [X_sup , Y_sup - 24, s + (pi/6)], [X_sup -10, Y_sup - 24, s + (pi/6)]
+            ]
 
-    U_l = [[X_sup + 30, Y_sup - 12]]
+    U_l = [[X_sup + 30, Y_sup - 12, s], [X_sup + 20, Y_sup - 12, s], [X_sup + 10, Y_sup - 12, s], [X_sup , Y_sup - 12, s], [X_sup -10, Y_sup - 12, s],
+           [X_sup + 30  , Y_sup - 12, s + (pi/6)], [X_sup + 20, Y_sup - 12, s + (pi/6)], [X_sup + 10, Y_sup - 12, s + (pi/6)], [X_sup , Y_sup - 12, s + (pi/6)], [X_sup -10, Y_sup - 12, s + (pi/6)],
+           [X_sup + 30, Y_sup - 24, s], [X_sup + 20, Y_sup - 24, s], [X_sup + 10, Y_sup - 24, s], [X_sup , Y_sup - 24, s], [X_sup -10, Y_sup - 24, s],
+           [X_sup + 30  , Y_sup - 24, s + (pi/6)], [X_sup + 20, Y_sup - 24, s + (pi/6)], [X_sup + 10, Y_sup - 24, s + (pi/6)], [X_sup , Y_sup - 24, s + (pi/6)], [X_sup -10, Y_sup - 24, s + (pi/6)]
+            ]
+                    
 
     if vertex.f_swg_id == 'Right':
         pass
@@ -156,7 +168,7 @@ def Feasibility_check(f):
     #R3: 
     pass
 
-def R1_feasibility(f):#,Map):
+def R1_feasibility(f, Map):
     """
     This verifies that the footstep f is fully in contact within a single horizontal patch.
     To guarantee this, each cell of the map belonging to or overlapping with the footprint
@@ -175,13 +187,22 @@ def R1_feasibility(f):#,Map):
             counter += 1
             footstep[:,counter] = np.array([j,k])
 
+    height = None
     for i in range(0,footstep.shape[1]):
         position = np.rint(np.matmul(rotation_matrix, footstep[:,i]))
         position[0] = position[0] + f[0]
         position[1] = position[1] + f[1]
         print(footstep[:,i], position)
-        ##ADESSO DEVO VERIFICARE OGNI POSITION
-    return footstep
+        if height == None:
+            height = Map.mlsm[position[0].astype(int)][position[1].astype(int)]
+        else:
+            if Map.mlsm[position[0].astype(int)][position[1].astype(int)] == height:
+                pass
+            else:
+                R1_feasibility = 'Not_Feasible'
+                return R1_feasibility 
+    R1_feasibility = 'Feasible'
+    return R1_feasibility
 
 
 
