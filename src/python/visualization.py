@@ -5,8 +5,9 @@ import numpy as np
 import json
 import argparse
 from pathlib import Path
+from math import cos, sin
 
-from utils import json2dict, rpy2rotation_matrix
+from utils import json2dict, rpy2rotation_matrix, get_z_rotation_matrix
 from multi_level_surface_map import MultiLevelSurfaceMap
 
 def get_coordinates(position, size, orientation):
@@ -15,33 +16,48 @@ def get_coordinates(position, size, orientation):
          [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]],
          [[0, 0, 1], [0, 0, 0], [0, 1, 0], [0, 1, 1]],
          [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]],
-         [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]]] # a list of vertices for each face
+         [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]]] # a list of vertices for each face of a cuboid
     X = np.array(X).astype(float)
+
+    # Scaling based on the size
     for i in range(3):
         if i == 2: X[:,:,i] *= -size[i] # for convenience wrt the depth definition
         else: X[:,:,i] *= size[i]
-    R = rpy2rotation_matrix(orientation)
+
+    # Rotation based on the orientation
+    rotation_matrix = rpy2rotation_matrix(orientation)
     for i in range(X.shape[0]):
         for j in range(X.shape[1]):
-            X[i,j,:] = R.dot(X[i,j,:])
-    X += np.array(position)
+            X[i,j,:] = rotation_matrix.dot(X[i,j,:])
+
+    # Calculation of the position of the 'reference vertex' given the centroid of the cuboid
+    delta = np.array([-size[0]/2, -size[1]/2, size[2]/2]).astype(float)
+    delta = get_z_rotation_matrix(orientation[2]).dot( delta )
+    position = np.array(position) + delta
+
+    # Translation based on the 'reference vertex'
+    X += position
+
     return X
+
 
 def get_poly_collection(scene):
     # TODO: separate boxes and flat surfaces
     collection = []
     for object in scene:
-        obj_dimensions = scene[object]['size']
+        obj_size = scene[object]['size']
         obj_orientation = scene[object]['orientation']
         obj_position = scene[object]['position']
-        obj_position[0] -= obj_dimensions[0]/2
-        obj_position[1] -= obj_dimensions[1]/2
-        obj_position[2] += obj_dimensions[2]/2
-        block = get_coordinates(obj_position, obj_dimensions, obj_orientation)
+
+        # obj_position[0] -= obj_dimensions[0]/2
+        # obj_position[1] -= obj_dimensions[1]/2
+        # obj_position[2] += obj_dimensions[2]/2
+
+        block = get_coordinates(obj_position, obj_size, obj_orientation)
         collection.append( block )
     collection = list(np.concatenate(collection))
     return Poly3DCollection(collection, edgecolor=[0.5, 0.5, 0.5])
-    # return Poly3DCollection(collection, shade=True) # ToDo: better but works only with matplotlib v.3.7 and above
+    # return Poly3DCollection(collection, shade=True) # TODO: better but works only with matplotlib v.3.7 and above
 
 
 def main(world_json, resolution):
@@ -49,7 +65,7 @@ def main(world_json, resolution):
     # Multilevel map plot
     map = MultiLevelSurfaceMap(world_json, resolution)
     #map.plot()
-    
+
     # World plot
     world_figure = plt.figure('Wold of cubes')
     ax = plt.subplot(projection='3d')
@@ -68,7 +84,7 @@ def main(world_json, resolution):
     ax.set_xlim(-4, 6)
     ax.set_ylim(-4, 6)
     ax.set_zlim(-4, 6)
-    
+
     plt.show()
 
 
