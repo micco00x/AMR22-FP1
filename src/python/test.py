@@ -6,8 +6,8 @@ import numpy as np
 pi = np.pi
 
 
-Map = MultiLevelSurfaceMap( 'data/world.json', 0.2)
-print(type(Map.mlsm))
+map = MultiLevelSurfaceMap( 'data/world_of_stairs.json', 0.2)
+print(type(map.mlsm))
 
 f = (-10, 2, 8, 0)
-print(R1_feasibility(f, Map))
+print(R1_feasibility(f, map))
