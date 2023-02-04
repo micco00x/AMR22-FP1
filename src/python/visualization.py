@@ -32,7 +32,7 @@ def get_coordinates(position, size, orientation):
 
     # Calculation of the position of the 'reference vertex' given the centroid of the cuboid
     delta = np.array([-size[0]/2, -size[1]/2, size[2]/2]).astype(float)
-    delta = get_z_rotation_matrix(orientation[2]).dot( delta )
+    delta = rotation_matrix.dot( delta )
     position = np.array(position) + delta
 
     # Translation based on the 'reference vertex'
@@ -48,11 +48,6 @@ def get_poly_collection(scene):
         obj_size = scene[object]['size']
         obj_orientation = scene[object]['orientation']
         obj_position = scene[object]['position']
-
-        # obj_position[0] -= obj_dimensions[0]/2
-        # obj_position[1] -= obj_dimensions[1]/2
-        # obj_position[2] += obj_dimensions[2]/2
-
         block = get_coordinates(obj_position, obj_size, obj_orientation)
         collection.append( block )
     collection = list(np.concatenate(collection))
