@@ -8,32 +8,41 @@ def json2dict(json_file):
         dict = json.load(file)
     return dict
 
+def get_x_rotation_matrix(alpha):
+    cos_alpha = cos(alpha)
+    sin_alpha = sin(alpha)
+    rot_matrix_x = np.array( [[1,    0,             0         ],
+                              [0,    cos_alpha,     -sin_alpha],
+                              [0,    sin_alpha,     cos_alpha ]] ).astype(float)
+    return rot_matrix_x
+
+
+def get_y_rotation_matrix(alpha):
+    cos_alpha = cos(alpha)
+    sin_alpha = sin(alpha)
+    rot_matrix_y = np.array( [[cos_alpha,    0,    sin_alpha],
+                              [0,            1,    0        ],
+                              [-sin_alpha,   0,    cos_alpha]] ).astype(float)
+    return rot_matrix_y
+
+
+def get_z_rotation_matrix(alpha):
+    cosAlpha = cos(alpha)
+    sinAlpha = sin(alpha)
+    rot_matrix_z = np.array( [[cosAlpha,    -sinAlpha,  0],
+                              [sinAlpha,    cosAlpha,   0],
+                              [0,           0,          1]] ).astype(float)
+    return rot_matrix_z
+
+
 def rpy2rotation_matrix(orientation):
     alpha, beta, gamma = orientation[0], orientation[1], orientation[2]
-    c_alpha = cos(alpha)
-    s_alpha = sin(alpha)
-    c_beta = cos(beta)
-    s_beta = sin(beta)
-    c_gamma = cos(gamma)
-    s_gamma = sin(gamma)
+    rot_matrix_x = get_x_rotation_matrix(alpha)
+    rot_matrix_y = get_y_rotation_matrix(beta)
+    rot_matrix_z = get_z_rotation_matrix(gamma)
     
-    Rx = np.array( [[1,    0,           0      ],
-                    [0,    c_alpha,    -s_alpha],
-                    [0,    s_alpha,    c_alpha ]] ).astype(float)
-    
-    Ry = np.array( [[c_beta,    0,    s_beta],
-                    [0,         1,    0     ],
-                    [-s_beta,   0,    c_beta]] ).astype(float)
-    
-    Rz = np.array( [[c_gamma,   -s_gamma,   0],
-                    [s_gamma,   c_gamma,    0],
-                    [0,         0,          1]] ).astype(float)
-    
-    R = Rz.dot( Ry.dot( Rx ) )
-    # R = np.array( [[c_gamma*c_beta,   c_gamma*s_beta*s_alpha - s_gamma*c_alpha,   c_gamma*s_beta*c_alpha + s_gamma*s_alpha],
-    #                [s_gamma*c_beta,   s_gamma*s_beta*s_alpha + c_gamma*c_alpha,   s_gamma*s_beta*c_alpha - c_gamma*s_alpha],
-    #                [-s_beta,          c_beta*s_alpha,                             c_beta*c_alpha                         ]] ).astype(float)
-    return R
+    return rot_matrix_z.dot( rot_matrix_y.dot( rot_matrix_x ) ) # Rz(gamma)*Rz(beta)*Rx(alpha)
+
 
 def calculate_world_dimensions(world_dict):
         x_range = [0, 0] # MIN and MAX value on the x axis
