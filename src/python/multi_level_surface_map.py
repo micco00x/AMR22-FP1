@@ -2,49 +2,30 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-from utils import json2dict
+from utils import json2dict, calculate_world_dimensions
 
 # considering only positive values for the position of the boxes
 class MultiLevelSurfaceMap():
     def __init__(self, world_json, resolution):
         self.resolution = resolution
         
-        self.world_dimensions = self.calculate_world_dimensions(world_json)
+        world_dict = json2dict(world_json)
+        self.world_dimensions = calculate_world_dimensions(world_dict)
         rows = math.ceil((self.world_dimensions[0][1] - self.world_dimensions[0][0])/self.resolution)
         columns = math.ceil((self.world_dimensions[1][1] - self.world_dimensions[1][0])/self.resolution)
         self.discrete_size = (rows, columns)
         
         self.mlsm = [[ None ]*columns for _ in range(rows) ]
-        self.build(world_json)
+        self.build(world_dict)
     
-    def calculate_world_dimensions(self, world_json):
-        x_range = [0, 0] # MIN and MAX value on the x axis
-        y_range = [0, 0] # MIN and MAX value on the y axis
-        z_range = [0, 0] # MIN and MAX value on the z axis
-        
-        world = json2dict(world_json)['boxes']
-        for obj in world:
-            pos = world[obj]['position']
-            size = world[obj]['size']
-            if pos[0] < x_range[0]: x_range[0] = pos[0] # new minimum found on the x axis
-            if pos[0] + size[0] > x_range[1]: x_range[1] = pos[0] + size[0] # new maximum found on the x axis
+    def build(self, world_dict):
+        boxes = world_dict['boxes']
+        for obj in boxes:
+            size = boxes[obj]['size']
+            position = boxes[obj]['position'] # position of the centroid of the box
+            position[2] += size[2]/2 # translation to have the reference point on the surface of the box
             
-            if pos[1] < y_range[0]: y_range[0] = pos[1] # new minimum found on the y axis
-            if pos[1] + size[1] > y_range[1]: y_range[1] = pos[1] + size[1] # new maximum found on the y axis
-            
-            if pos[2] - size[2] < z_range[0]: z_range[0] = pos[2] - size[2] # new minimum found on the z axis
-            if pos[2] > z_range[1]: z_range[1] = pos[2] # new maximum found on the z axis
-        
-        return (x_range, y_range, z_range)
-        
-    def build(self, world_json):
-        world = json2dict(world_json)['boxes']
-        for obj in world:
-            position = world[obj]['position']
-            size = world[obj]['size']
-            map_position_x = math.ceil((position[0] - self.world_dimensions[0][0]) / self.resolution)
-            map_position_y = math.ceil((position[1] - self.world_dimensions[1][0]) / self.resolution)
-            
+            map_position_x, map_position_y = self.query(position[0], position[1])
             for i in range(map_position_x, map_position_x + int(size[0]//self.resolution) ):
                 for j in range(map_position_y, map_position_y + int(size[1]//self.resolution) ):
                     if not self.mlsm[i][j]: self.mlsm[i][j] = []
@@ -77,6 +58,15 @@ class MultiLevelSurfaceMap():
                         ax.plot(x, y, z, c='b')
             # ax.scatter(points_x, points_y, points_z, c='r', s=10)
             # ax.plot(points_x, points_z, color='b')
+    
+    def query(self, x, y): # TODO serve anche inserire la z?
+        '''Given the continous coordinates of a point, returns the indexes of the mlsm cell that contains that point'''
+        map_position_x = math.ceil((x - self.world_dimensions[0][0]) / self.resolution)
+        map_position_y = math.ceil((y - self.world_dimensions[1][0]) / self.resolution)
+        return (map_position_x, map_position_y)
+        
+        
+
 
 if __name__ == '__main__':
     map = MultiLevelSurfaceMap((15,15), 'data/world.json', 1)
