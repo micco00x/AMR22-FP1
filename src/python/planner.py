@@ -75,7 +75,7 @@ def RRT(Initial_Stance, Goal, Map):
     stop_condition = Goal_Check()
 
     """ Step 1) Selecting a vertex for expansion"""
-    while stop_condition == False:
+    while stop_condition == False: #Untill the goal is reached
         p_rand = [randint(x_range[0], x_range[1]), randint(y_range[0],y_range[1])] # random point in (x,y)
         if rrt_tree.children() == []:
             v_near = rrt_tree
@@ -107,6 +107,34 @@ def RRT(Initial_Stance, Goal, Map):
 
 
     pass
+
+
+def V_near_Generation(tree, p_rand): 
+    v_near = tree
+    distance = None
+    if tree.children() != []:
+        for child in tree.childern():
+            v_near = None
+            distance, v_near = V_near_Generation(child, p_rand)
+    else:
+        dist = Vertex_to_Point_Distance(tree, p_rand)
+        if v_near == None:
+            distance = dist
+            v_near = child
+        else:
+            if dist < distance:
+                distance = dist
+                v_near = child
+            else:
+                pass    
+            return distance, v_near
+            
+    return distance, v_near
+    # if rrt_tree.children() == []:
+    #     v_near = rrt_tree
+
+
+
 
 def Vertex_to_Point_Distance(vertex, point, k = 3):
     
@@ -205,6 +233,5 @@ def R1_feasibility(f, Map):
     return R1_feasibility
 
 
-
-
-
+def R2_feasibility(f):
+    pass
