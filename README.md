@@ -24,5 +24,5 @@ Think about exploit:
 ## Visualization
 
 ```bash
-python src/python/visualization.py --resolution 0.5
+python src/python/visualization.py --world data/world_of_stairs.json
 ```
