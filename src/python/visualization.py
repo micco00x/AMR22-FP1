@@ -32,8 +32,8 @@ def get_poly_collection(scene):
 def old_main(world_json, resolution):
 
     # Multilevel map plot
-    # map = MultiLevelSurfaceMap(world_json, resolution)
-    # map.plot()
+    map = MultiLevelSurfaceMap(world_json, resolution)
+    map.plot()
 
     # World plot
     world_figure = plt.figure('Wold of cubes')
@@ -47,12 +47,9 @@ def old_main(world_json, resolution):
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
     # Visualization boundaries:
-    # ax.set_xlim([map.world_dimensions[0][0], map.world_dimensions[0][1]])
-    # ax.set_ylim([map.world_dimensions[1][0], map.world_dimensions[1][1]])
-    # ax.set_zlim([map.world_dimensions[2][0], map.world_dimensions[2][1]])
-    ax.set_xlim(-4, 6)
-    ax.set_ylim(-4, 6)
-    ax.set_zlim(-4, 6)
+    ax.set_xlim([map.world_dimensions[0][0], map.world_dimensions[0][1]])
+    ax.set_ylim([map.world_dimensions[1][0], map.world_dimensions[1][1]])
+    ax.set_zlim([map.world_dimensions[2][0], map.world_dimensions[2][1]])
 
     plt.show()
 
@@ -71,7 +68,7 @@ def main(world_json, resolution):
         z=z,
         mode='markers',
         marker=dict(
-            size=12,
+            size=0.02/map.resolution,
             color=z,                # set color to an array/list of desired values
             colorscale='Viridis',   # choose a colorscale
             opacity=0.8
