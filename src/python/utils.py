@@ -64,7 +64,7 @@ def get_2d_rectangle_coordinates(position, size, orientation):
     for i in range(vertices.shape[0]):
         vertices[i,:] = rotation_matrix.dot(vertices[i,:])
 
-    # Calculation of the position of the 'reference vertex' given the centroid of the cuboid
+    # Calculation of the position of the 'reference vertex' given the centroid of the rectangle
     delta = np.array([-size[0]/2, -size[1]/2]).astype(float)
     delta = rotation_matrix.dot( delta )
     position = np.array(position) + delta
