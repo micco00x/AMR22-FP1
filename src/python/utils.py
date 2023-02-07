@@ -43,6 +43,69 @@ def rpy2rotation_matrix(orientation):
     
     return rot_matrix_z.dot( rot_matrix_y.dot( rot_matrix_x ) ) # Rz(gamma)*Rz(beta)*Rx(alpha)
 
+def get_z_rotation_matrix_2d(alpha):
+    cosAlpha = cos(alpha)
+    sinAlpha = sin(alpha)
+    rot_matrix_z = np.array( [[cosAlpha,    -sinAlpha],
+                              [sinAlpha,    cosAlpha ]] ).astype(float)
+    return rot_matrix_z
+
+
+def get_2d_rectangle_coordinates(position, size, orientation):
+    '''Given the position, the size and the orientation of a rectangle, this function will return the list of its vertices.'''
+    vertices = [[0, 1], [0, 0], [1, 0], [1, 1]]
+    vertices = np.array(vertices).astype(float)
+
+    # Scaling based on the size
+    for i in range(2): vertices[:,i] *= size[i]
+
+    # Rotation based on the orientation
+    rotation_matrix = get_z_rotation_matrix_2d(orientation)
+    for i in range(vertices.shape[0]):
+        vertices[i,:] = rotation_matrix.dot(vertices[i,:])
+
+    # Calculation of the position of the 'reference vertex' given the centroid of the cuboid
+    delta = np.array([-size[0]/2, -size[1]/2]).astype(float)
+    delta = rotation_matrix.dot( delta )
+    position = np.array(position) + delta
+
+    # Translation based on the 'reference vertex'
+    vertices += position
+
+    return vertices
+
+
+def get_3d_cuboid_coordinates(position, size, orientation):
+    '''Given the position, the size and the orientation of a cuboid, this function will return the list of vertices for each face of the cubiod itself.'''
+    vertices = [[[0, 1, 0], [0, 0, 0], [1, 0, 0], [1, 1, 0]],
+         [[0, 0, 0], [0, 0, 1], [1, 0, 1], [1, 0, 0]],
+         [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]],
+         [[0, 0, 1], [0, 0, 0], [0, 1, 0], [0, 1, 1]],
+         [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]],
+         [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]]] # a list of vertices for each face of a cuboid
+    vertices = np.array(vertices).astype(float)
+
+    # Scaling based on the size
+    for i in range(3):
+        if i == 2: vertices[:,:,i] *= -size[i] # for convenience wrt the depth definition
+        else: vertices[:,:,i] *= size[i]
+
+    # Rotation based on the orientation
+    rotation_matrix = rpy2rotation_matrix(orientation)
+    for i in range(vertices.shape[0]):
+        for j in range(vertices.shape[1]):
+            vertices[i,j,:] = rotation_matrix.dot(vertices[i,j,:])
+
+    # Calculation of the position of the 'reference vertex' given the centroid of the cuboid
+    delta = np.array([-size[0]/2, -size[1]/2, size[2]/2]).astype(float)
+    delta = rotation_matrix.dot( delta )
+    position = np.array(position) + delta
+
+    # Translation based on the 'reference vertex'
+    vertices += position
+
+    return vertices
+
 
 def calculate_world_dimensions(world_dict):
         x_range = [0, 0] # MIN and MAX value on the x axis
@@ -53,14 +116,15 @@ def calculate_world_dimensions(world_dict):
         for obj in boxes:
             pos = boxes[obj]['position']
             size = boxes[obj]['size']
-            orientation = boxes[obj]['orientation'][2]
+            orientation = boxes[obj]['orientation']
+            vertices = get_2d_rectangle_coordinates(pos[:-1], size[:-1], orientation[2])
             
-            # TODO take orientation into account 
-            if pos[0] < x_range[0]: x_range[0] = pos[0] # new minimum found on the x axis
-            if pos[0] + size[0] > x_range[1]: x_range[1] = pos[0] + size[0] # new maximum found on the x axis
-            
-            if pos[1] < y_range[0]: y_range[0] = pos[1] # new minimum found on the y axis
-            if pos[1] + size[1] > y_range[1]: y_range[1] = pos[1] + size[1] # new maximum found on the y axis
+            for v in vertices:
+                if v[0] < x_range[0]: x_range[0] = v[0] # new minimum found on the x axis
+                if v[0] > x_range[1]: x_range[1] = v[0] # new maximum found on the x axis
+                
+                if v[1] < y_range[0]: y_range[0] = v[1] # new minimum found on the y axis
+                if v[1] > y_range[1]: y_range[1] = v[1] # new maximum found on the y axis
             
             if pos[2] - size[2] < z_range[0]: z_range[0] = pos[2] - size[2] # new minimum found on the z axis
             if pos[2] > z_range[1]: z_range[1] = pos[2] # new maximum found on the z axis
