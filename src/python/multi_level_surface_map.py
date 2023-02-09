@@ -59,10 +59,21 @@ class MultiLevelSurfaceMap():
         map_position_x, map_position_y = self.world2map_coordinates(x, y)
         return self.mlsm[map_position_x][map_position_y]
     
-    # def check_collision(self, x, y, z, z_depth):
-    #     levels = self.query(x, y)
-    #     for level in levels:
-    #         if (level[0] >= z and z <= level[0]-level[1]) or ( level[0]-level[1]  )
+    def check_collision(self, x, y, z, z_depth=0):
+        ''' Checks if a segment (or a point) is in collision with an object in the map.
+        x, y, z: point position
+        z_depth: lenght of the segment. Zero if you have to check a point
+        
+        Returns True if there is no collision, False otherwise.
+        '''
+        levels = self.query(x, y)
+        if(not levels): return True
+        for level in levels:
+            if( (level[0] >= z and z <= level[0]-level[1]) or (level[0] >= z+z_depth and z_depth <= level[0]-level[1]) ):
+                return False
+        return True
+    
+    
         
     
     def as_numpy(self, stride=1):
