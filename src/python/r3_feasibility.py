@@ -11,7 +11,7 @@ import sympy
 
 
 #retunr True exists a feasible trajectory, otherwise return False
-def r3_feasibility(v, f, f_prev, map):
+def r3_feasibility(f_prev_swg, f_actual_sup, map):
     """
     This verifies that the footstep from j-2 to j is collision free.
     To do so, we have to check that:
@@ -32,15 +32,16 @@ def r3_feasibility(v, f, f_prev, map):
     #h = h_robot - zb #height of the cylinder's mid point
 
     #è piu un poligono che un cylindro
+    #check_collision
     for z in range(v[2]+zb, v[2] + h_robot): #considering v[2] height of the foot of the robot (mid point on the floor)
         for y in range(v[1]-r, v[1]+r):
             for x in range(v[0]-r, v[0]+r):
-                if (map[x,y,z] != 0): #check that there aren't obstacle on the patches of the cylinder
+                if (map.query(x, y)): #check that there aren't obstacle on the patches of the cylinder
                     return False
     
 
     #FOOT TRAJECTORY CHECK
-    trajectory = generate_trajectory(f_prev, f)
+    trajectory = generate_trajectory(f_prev_swg, f_actual_sup)
     if trajectory == -1:
         return False
 
@@ -175,20 +176,24 @@ def rewiring(v_new):
     h_max = 0.30 #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
     neighbors = neighborhood(v_new) #define neighbors
-    for i in neighbors:
-        if i == v_new.parent: #if parents skip
+    for neighbor in neighbors:
+        if neighbor == v_new.parent: #if parents skip
             continue
 
-        if (Feasibility_check(v_new, i)): #check r1, r2, r3
-            if (v_new. cost + edge_cost(v_new, i)) < i.cost: #check if cost is less   ##############cost on tree (on each node)#########################
-                i.f_swg = v_new.f_sup    #change f_swg of the new child
-                i.is_Child(v_new)   #set new child of v_new
-                t_new = generate_trajectory(v_new.f_swg, i.f_sup) #calcolate new trajectory
+        if (r2_feasibility(neighbor, v_new) and (r3_feasibility(v_new.f_swg, neighbor.f_sup ))): #check r1, r2, r3
+            if (v_new. cost + edge_cost(v_new, neighbor)) < neighbor.cost: #check if cost is less   ##############cost on tree (on each node)#########################
+                neighbor.parent.children.remove(neighbor)
+                neighbor.f_swg = v_new.f_sup    #change f_swg of the new child
+                v_new.children.append(neighbor)   #set new child of v_new
+                neighbor.parent = v_new
+
+                t_new = generate_trajectory(v_new.f_swg, neighbor.f_sup) #calcolate new trajectory
+                neighbor.trajectory = t_new
                 #set new trajectory on tree
 
-                neighbors2 = neighborhood(i)
-                for j in neighbors2:
-                    t_new = generate_trajectory(i.f_swg, j.f_sup) #calcolate new trajectory
+                new_neighbors = neighborhood(neighbor)
+                for j in new_neighbors:
+                    t_new = generate_trajectory(neighbor.f_swg, j.f_sup) #calcolate new trajectory
                     #set new trajectory on tree
 
 

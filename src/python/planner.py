@@ -30,12 +30,13 @@ class Node():
     """
     Each node v of the tree is a stance v = (f_swg, f_sup)
     """
-    def __init__(self, f_swg, f_sup):
+    def __init__(self, f_swg, f_sup, parent = None, trajectory = []):
         self.f_swg = f_swg
         self.f_sup = f_sup
-        self.parent = None
+        self.parent = parent
         self.children = []
         self.f_swg_id = 'Right' # It always starts by moving right foot first
+        self.trajectory = trajectory # Trajectory is the trajectory that , starting from the parent, brings to the actual node
     
     # def expand(self, new_f_swg, new_f_sup):
     #     new_node = Node(new_f_swg, new_f_sup)
@@ -58,6 +59,13 @@ class Node():
     def is_parent(self, child_node):
         child_node.parent = self
 
+
+    def __eq__(self, other):
+        if (self.f_swg == other.f_swg) and (self.f_sup == other.f_sup):
+            return True
+        if (self.f_swg == other.f_sup) and (self.f_sup == other.f_swg):
+            return True
+        return False
 
 
 
@@ -95,9 +103,9 @@ def RRT(initial_Stance, goal, mlsm, time_max):
 
         r1_check = r1_feasibility(candidate_sup_f, mlsm)
         r2_check = r2_feasibility(candidate_sup_f, v_near.f_swg)
-        if r1_check == 'Not_Feasible':
+        if r1_check == False:
             pass # The current expansion attempt is aborted and a new iteration is started
-        if r2_check == 'Not_Feasible':
+        if r2_check == False:
             pass
 
         """ Step 3) Choosing a parent"""
@@ -247,12 +255,6 @@ def assign_height(actual_footprint, previous_footprint, map):
     return h_actual 
 
 
-def Feasibility_check(f):
-    #Conditions for feasibility
-    #R1: f fully in contact
-    #R2: stance feasibility, f is kinematically admissible from previous footstep 
-    #R3: 
-    pass
 
 def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE NEL MONDO, POI CAMBIO LE COORDS E VADO NEL
     #SISTEMA DI RIFERIMENTO DELLA MAPPA E SOLO LA VALUTO QUALE QUADRATINI OCCUPA E POI FACCIO IL CHECK
@@ -282,16 +284,16 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
         #print(footstep[:,i], position)
         if height == 'start':
             if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
-                return 'Not_Feasible'
+                return False
             height = map.mlsm[position[0].astype(int)][position[1].astype(int)][0]
         else:
             if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
-                return 'Not_Feasible'
+                return False
             if map.mlsm[position[0].astype(int)][position[1].astype(int)][0] == height:
                 pass
             else:
-                return 'Not_Feasible'
-    return 'Feasible'
+                return False
+    return True
 
 def r2_feasibility(f, f_prev):
     """
@@ -319,14 +321,14 @@ def r2_feasibility(f, f_prev):
     theta = f[3] - f_prev[3]
 
     if ((xy_pos[0] < - delta_x_min) or (xy_pos[0] > delta_x_max)): # For x the posutive case is enough since it has 0 in the summed vector
-        return 'Not_Feasible'
+        return False
     if ((xy_pos[1] < -delta_y_min) or (xy_pos[1] > delta_y_max)):
-        return 'Not_Feasible'
+        return False
     if ((xy_neg[1] < -delta_y_min) or (xy_neg[1] > delta_y_max)):
-        return 'Not_Feasible'
+        return False
     if ((z < -delta_z_min) or (z > delta_z_max)):
-        return 'Not_Feasible'
+        return False
     if ((theta < -delta_theta_min) or (theta > delta_theta_max)):
-        return 'Not_Feasible'
+        return False
     else:
-        return 'Feasible'
+        return True
