@@ -68,7 +68,7 @@ def main(world_json, resolution):
         z=z,
         mode='markers',
         marker=dict(
-            size=0.02/map.resolution,
+            size=10,#0.02/map.resolution,
             color=z,                # set color to an array/list of desired values
             colorscale='Viridis',   # choose a colorscale
             opacity=0.8
