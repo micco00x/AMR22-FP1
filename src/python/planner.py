@@ -194,7 +194,7 @@ def motion_Primitive_selector(node):
             ]
 
     U_r = [[X_sup + 0.30, Y_sup - 0.12, 0, s], [X_sup + 0.20, Y_sup - 0.12, 0, s], [X_sup + 0.10, Y_sup - 0.12, 0, s], [X_sup , Y_sup - 0.12, 0, s], [X_sup -0.10, Y_sup - 0.12, 0, s],
-           [X_sup + 0.30, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.12, 0, s + (pi/6)], [X_sup , Y_sup - 12, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.12, 0, s + (pi/6)],
+           [X_sup + 0.30, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.12, 0, s + (pi/6)], [X_sup , Y_sup - 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.12, 0, s + (pi/6)],
            [X_sup + 0.30, Y_sup - 0.24, 0, s], [X_sup + 0.20, Y_sup - 0.24, 0, s], [X_sup + 0.10, Y_sup - 0.24, 0, s], [X_sup , Y_sup - 0.24, 0, s], [X_sup -0.10, Y_sup - 0.24, 0, s],
            [X_sup + 0.30, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.24, 0, s + (pi/6)], [X_sup , Y_sup - 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.24, 0, s + (pi/6)]
             ]
