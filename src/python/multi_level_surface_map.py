@@ -41,24 +41,29 @@ class MultiLevelSurfaceMap():
                             
                             # MLSM population
                             if not self.mlsm[map_position_x][map_position_y]: self.mlsm[map_position_x][map_position_y] = []
-                            self.mlsm[map_position_x][map_position_y].append( (position[2], size[2]) )
+                            if((position[2], size[2]) not in self.mlsm[map_position_x][map_position_y]): self.mlsm[map_position_x][map_position_y].append( (position[2], size[2]) )
                     
-                    delta_y += self.resolution
-                delta_x += self.resolution
+                    delta_y += self.resolution*0.9
+                delta_x += self.resolution*0.9
                 
             
-    def world2map_coordinates(self, x, y, z=None): # TODO modificare in base a come ci è più comodo
+    def world2map_coordinates(self, x, y):
         '''Given the continous coordinates of a point, returns the indexes of the mlsm cell that contains that point'''
         map_position_x = math.floor((x - self.world_dimensions[0][0]) / self.resolution)
         map_position_y = math.floor((y - self.world_dimensions[1][0]) / self.resolution)
         return (map_position_x, map_position_y)
     
     
-    def query(self, x, y, z=None): # TODO modificare in base a come ci è più comodo
+    def query(self, x, y): 
         '''Given the continous coordinates of a point, returns the content of the mlsm cell that contains that point'''
         map_position_x, map_position_y = self.world2map_coordinates(x, y)
         return self.mlsm[map_position_x][map_position_y]
     
+    # def check_collision(self, x, y, z, z_depth):
+    #     levels = self.query(x, y)
+    #     for level in levels:
+    #         if (level[0] >= z and z <= level[0]-level[1]) or ( level[0]-level[1]  )
+        
     
     def as_numpy(self, stride=1):
         '''Returns the function as numpy array.
