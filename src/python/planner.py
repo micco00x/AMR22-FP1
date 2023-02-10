@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 from numpy import transpose,  cos ,sin
 import random
-
+from multi_level_surface_map import MultiLevelSurfaceMap
+from utils import get_2d_rectangle_coordinates
 
 """
 Stance = (f_swing, f_support)
@@ -48,16 +49,16 @@ class Node():
 
     #     self.children = [self.children, new_node]
 
-    def is_Child(self, parent_node):
-        parent_node.children.append(self)
-        if parent_node.f_swg_id == 'Right':
-            self.f_swg_id = 'Left'
-        if parent_node.f_swg_id == 'Left':
-            self.f_swg_id = 'Right'
+    # def is_Child(self, parent_node):
+    #     parent_node.children.append(self)
+    #     if parent_node.f_swg_id == 'Right':
+    #         self.f_swg_id = 'Left'
+    #     if parent_node.f_swg_id == 'Left':
+    #         self.f_swg_id = 'Right'
 
     
-    def is_parent(self, child_node):
-        child_node.parent = self
+    # def is_parent(self, child_node):
+    #     child_node.parent = self
 
 
     def __eq__(self, other):
@@ -72,17 +73,17 @@ class Node():
 
 
 
-def RRT(initial_Stance, goal, mlsm, time_max):
+def RRT(initial_Stance, goal, map, time_max):
     """
     Initial_Stance = a list of 2 elements [f_swg_ini, f_sup_ini]
     Goal = a final goal region [an (x,y) area of the map]
     Map = multilevel surface map in 3D (x,y,z)
     """
     rrt_tree = Tree(initial_Stance[0], initial_Stance[1])
-    x_range = mlsm.rows
-    y_range = mlsm.columns
+    x_range = map.rows
+    y_range = map.columns
     #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
-    if goal_Check(rrt_tree.root, goal, mlsm) is True:
+    if goal_Check(rrt_tree.root, goal, map) is True:
         print('PATH FOUND')
         return rrt_tree
     
@@ -96,12 +97,12 @@ def RRT(initial_Stance, goal, mlsm, time_max):
         #Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
         candidate_swg_f, candidate_sup_f = motion_Primitive_selector(v_near)
         #print('candidate_sup-fot type:', type(candidate_sup_f), candidate_sup_f)
-        candidate_sup_f[2] = assign_height(candidate_sup_f, v_near.f_swg, mlsm)
+        candidate_sup_f[2] = assign_height(candidate_sup_f, v_near.f_swg, map)
         if candidate_sup_f[2] == False: # there isn't any object or surface in this point, so discard
             pass
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
-        r1_check = r1_feasibility(candidate_sup_f, mlsm)
+        r1_check = r1_feasibility(candidate_sup_f, map)
         r2_check = r2_feasibility(candidate_sup_f, v_near.f_swg)
         if r1_check == False:
             pass # The current expansion attempt is aborted and a new iteration is started
@@ -112,7 +113,7 @@ def RRT(initial_Stance, goal, mlsm, time_max):
         # DEVO: DEFINIRE LA FUNZIONE NEIGHBORHOOD CHE DEFINISCE I NODI VICINI AD UN NODO,
         #       DEFINIRE LA FUNZIONE DI COSTO DI UN VERTEX
     
-
+    print('ok')
         # if goal_Check(f_sup, goal, mlsm):
         #     return # TODO PATH la lista di passi da fare
 
@@ -157,14 +158,18 @@ def footstep_to_footstep_metric(f1, f2, kj = 0.4):
     metric = norm(p) + kj*norm(angle)
     return metric # Result is in FOOT COORDS
 
-def neighborhood(vertex,node):
-    # neighbors is a list with all the node of the tree that 
+def neighborhood(vertex,node, r_neigh = 3):
+    # neighbors is a list with all the node of the tree that have a footstep_to_footstep metric < r_neigh w.r.t VERTEX
     neighbors = []
     if len(node.children) == 0:
-        neighbors.append(footstep_to_footstep_metric(vertex.f_sup, node.f_sup))
+        metric = footstep_to_footstep_metric(vertex.f_sup, node.f_sup)
+        if metric < r_neigh:
+            neighbors.append(node)
         return neighbors
     for child in node.children:
-        neighbors.append(neighborhood(vertex, child))
+        list_of_neighbors = neighborhood(vertex, child)
+        for neigh in list_of_neighbors:
+            neighbors.append(neigh)
     return neighbors
 
 def cost_of_a_vertex():
@@ -222,9 +227,9 @@ def motion_Primitive_selector(node):
     return new_swing_foot, new_support_foot #Result is in FOOT COORDS
 
 
-def goal_Check(node, goal, mlsm):
+def goal_Check(node, goal, map):
     f = node.f_sup
-    f_x, f_y = mlsm.world2map_coordinates(f[0], f[1])
+    f_x, f_y = map.world2map_coordinates(f[0], f[1])
     for goal_point in goal:
         if f_x == goal_point[0] and f_y == goal_point[1]: # and f[2] == goal[2]:
             return True
@@ -239,14 +244,14 @@ def goal_Check(node, goal, mlsm):
 def assign_height(actual_footprint, previous_footprint, map):
     h_prev = previous_footprint[2]
     #print('h_prev :', type(h_prev))
-    cell = map.mlsm[actual_footprint[0]][actual_footprint[1]]
+    cell = map.query(actual_footprint[0],actual_footprint[1])
     #print('cell type:', type(cell), cell)
     if cell == None:# DA CAMBIARE EVNTUALMENTE IN multi_levele_surface_map.py , I NONE ROMPONO LE SCATOLE
         return False
     h_actual = cell[0][0]
     #print('h_actual type:', type(h_actual))
     for v in cell: # choose the smallest height difference for actual_footprint position in the map
-        print('v[0] type:', type(v[0]), v[0])
+        #print('v[0] type:', type(v[0]), v[0])
         # print('h_prev type:' , type(h_prev))
         # print('h_actual type', type(h_actual))
 
@@ -264,36 +269,52 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     must have the same height Z. The foorprint is 12x7 units , but let's use 13x9 to overcome
     small errors in postion
     """
-    saggital_axis = (f[3] + f[3]) / 2
-    a = saggital_axis
-    rotation_matrix = np.array(([cos(a),-sin(a)], [sin(a), cos(a)]))
-    x_range = list(range(-6, +6+1))
-    y_range = list(range(-4, +4+1))
-    footstep = np.zeros([2,(len(x_range)*len(y_range))])
-    counter = -1
-    for j in x_range:
-        for k in y_range:
-            counter += 1
-            footstep[:,counter] = np.array([j,k])
 
-    height = 'start'
-    for i in range(0,footstep.shape[1]):
-        position = np.rint(np.matmul(rotation_matrix, footstep[:,i]))
-        position[0] = position[0] + f[0]
-        position[1] = position[1] + f[1]
-        #print(footstep[:,i], position)
-        if height == 'start':
-            if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
-                return False
-            height = map.mlsm[position[0].astype(int)][position[1].astype(int)][0]
-        else:
-            if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
-                return False
-            if map.mlsm[position[0].astype(int)][position[1].astype(int)][0] == height:
-                pass
+    x = f[0]
+    y = f[1]
+    orientation = f[2]
+    size = [0.26, 0.14] #Foot size of the robot
+    vertices = get_2d_rectangle_coordinates([x,y], size, orientation)
+
+    for ver in vertices:
+        cell = map.query(ver[0], ver[1])
+        for obj in cell:
+            if obj[0] == f[3]:
+                continue
             else:
                 return False
-    return True
+    return  True
+
+
+    # sa = f[3] # Saggital axis
+    # rotation_matrix = np.array(([cos(sa),-sin(sa)], [sin(sa), cos(sa)]))
+    # x_range = list(range(-6, +6+1))
+    # y_range = list(range(-4, +4+1))
+    # footstep = np.zeros([2,(len(x_range)*len(y_range))])
+    # counter = -1
+    # for j in x_range:
+    #     for k in y_range:
+    #         counter += 1
+    #         footstep[:,counter] = np.array([j,k])
+
+    # height = 'start'
+    # for i in range(0,footstep.shape[1]):
+    #     position = np.rint(np.matmul(rotation_matrix, footstep[:,i]))
+    #     position[0] = position[0] + f[0]
+    #     position[1] = position[1] + f[1]
+    #     #print(footstep[:,i], position)
+    #     if height == 'start':
+    #         if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
+    #             return False
+    #         height = map.mlsm[position[0].astype(int)][position[1].astype(int)][0]
+    #     else:
+    #         if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
+    #             return False
+    #         if map.mlsm[position[0].astype(int)][position[1].astype(int)][0] == height:
+    #             pass
+    #         else:
+    #             return False
+    # return True
 
 def r2_feasibility(f, f_prev):
     """
