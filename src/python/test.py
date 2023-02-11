@@ -10,11 +10,14 @@ from planner import RRT
 
 
 map = MultiLevelSurfaceMap( 'data/world_of_stairs.json', 0.2)
-f_swg = (0.4, 0.4, 0.00205, 0) 
-f_sup = (0, 0, 0.00205, 0)
+
+f_swg = [0.45, -2.3, 0.00205, 0] 
+f_sup = [0.65, -2.3, 0.00205, 0]
 initial_stance = [f_sup, f_sup]
-goal_region = [ [map.world2map_coordinates(777777, 7777777)[0], map.world2map_coordinates(0, 0)[1], 0.00205] ] #FALSE GOAL REGION, IT NEVER ENDS
-#print('goal region:', goal_region)
+g = map.world2map_coordinates(1.85, 1.5)
+f = map.world2map_coordinates(0.45, -2.3)
+goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205], ] #FALSE GOAL REGION, IT NEVER ENDS
+print('goal region:', goal_region, 'Start', f)
 time_max = 1000
 
 RRT(initial_stance, goal_region, map, time_max)
