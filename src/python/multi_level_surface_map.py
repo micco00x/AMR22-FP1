@@ -50,6 +50,8 @@ class MultiLevelSurfaceMap():
             
     def world2map_coordinates(self, x, y):
         '''Given the continous coordinates of a point, returns the indexes of the mlsm cell that contains that point'''
+        if(x < self.world_dimensions[0][0] or x >= self.world_dimensions[0][1] or y < self.world_dimensions[1][0] or y >= self.world_dimensions[1][1]): # out of boundaries
+            return None
         map_position_x = math.floor((x - self.world_dimensions[0][0]) / self.resolution)
         map_position_y = math.floor((y - self.world_dimensions[1][0]) / self.resolution)
         return (map_position_x, map_position_y)
@@ -57,6 +59,8 @@ class MultiLevelSurfaceMap():
     
     def query(self, x, y): 
         '''Given the continous coordinates of a point, returns the content of the mlsm cell that contains that point'''
+        if(x < self.world_dimensions[0][0] or x >= self.world_dimensions[0][1] or y < self.world_dimensions[1][0] or y >= self.world_dimensions[1][1]): # out of boundaries
+            return None
         map_position_x, map_position_y = self.world2map_coordinates(x, y)
         return self.mlsm[map_position_x][map_position_y]
     
