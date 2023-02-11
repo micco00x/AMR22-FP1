@@ -1,8 +1,9 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
-from utils import json2dict, calculate_world_dimensions, get_z_rotation_matrix_2d, get_2d_rectangle_coordinates
+from src.python.utils import json2dict, calculate_world_dimensions, get_z_rotation_matrix_2d, get_2d_rectangle_coordinates
 
 # considering only positive values for the position of the boxes
 class MultiLevelSurfaceMap():
@@ -74,8 +75,6 @@ class MultiLevelSurfaceMap():
         return True
     
     
-        
-    
     def as_numpy(self, stride=1):
         '''Returns the function as numpy array.
         If you want to decrease the resolution of the map change the stride to an higher value.'''
@@ -94,6 +93,23 @@ class MultiLevelSurfaceMap():
         y = np.array(y, dtype=np.float64)
         z = np.array(z, dtype=np.float64)
         return (x, y, z)
+    
+    
+    def as_showable(self):
+        x, y, z = self.as_numpy(stride=5)
+        showable = go.Scatter3d(
+        x=x,
+        y=y,
+        z=z,
+        mode='markers',
+        marker=dict(
+            size=7,#0.02/map.resolution,
+            color=z,                # set color to an array/list of desired values
+            colorscale='Viridis',   # choose a colorscale
+            opacity=0.8
+            )
+        )
+        return showable
     
     
     def plot(self):
