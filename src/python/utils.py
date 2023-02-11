@@ -76,25 +76,19 @@ def get_2d_rectangle_coordinates(position, size, orientation):
 
 
 def get_3d_cuboid_coordinates(position, size, orientation):
-    '''Given the position, the size and the orientation of a cuboid, this function will return the list of vertices for each face of the cubiod itself.'''
-    vertices = [[[0, 1, 0], [0, 0, 0], [1, 0, 0], [1, 1, 0]],
-         [[0, 0, 0], [0, 0, 1], [1, 0, 1], [1, 0, 0]],
-         [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]],
-         [[0, 0, 1], [0, 0, 0], [0, 1, 0], [0, 1, 1]],
-         [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]],
-         [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]]] # a list of vertices for each face of a cuboid
-    vertices = np.array(vertices).astype(float)
+    '''Given the position of the centroid (x,y,z), the size (width, height, depth) and the orientation of a cuboid (alpha, beta, gamma), this function will return the list of the 8 vertices of the corresponding cubiod.'''
+    vertices = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]] # the list of vertices of a cube centered at the origin and with l=1
+    vertices = np.array(vertices, dtype=np.float64)
 
     # Scaling based on the size
     for i in range(3):
-        if i == 2: vertices[:,:,i] *= -size[i] # for convenience wrt the depth definition
-        else: vertices[:,:,i] *= size[i]
+        if i == 2: vertices[:,i] *= -size[i] # for convenience wrt the depth definition
+        else: vertices[:,i] *= size[i]
 
     # Rotation based on the orientation
     rotation_matrix = rpy2rotation_matrix(orientation)
     for i in range(vertices.shape[0]):
-        for j in range(vertices.shape[1]):
-            vertices[i,j,:] = rotation_matrix.dot(vertices[i,j,:])
+            vertices[i,:] = rotation_matrix.dot(vertices[i,:])
 
     # Calculation of the position of the 'reference vertex' given the centroid of the cuboid
     delta = np.array([-size[0]/2, -size[1]/2, size[2]/2]).astype(float)
