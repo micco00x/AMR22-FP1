@@ -32,15 +32,15 @@ def main(world_json, resolution):
     for mesh in world_meshes:
         fig.add_trace(mesh, row=1, col=2)
     
-    #RRT
-    f_swg = [0.45, -2.3, 0.00205, 0] 
-    f_sup = [0.65, -2.3, 0.00205, 0]
+    #RRT: CAMBIO I PIEDI INIZIALI E LI METTO VICINO A DELLE SCALE PER VEDERE SE CAMBIA L' ALTEZZA IN DEI NODI SUCCESSIVI
+    f_swg = [-0.45, 1, 0.00205, 0] 
+    f_sup = [-0.55, 1, 0.00205, 0]
     initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
     goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205], ] #FALSE GOAL REGION, IT NEVER ENDS
     print('goal region:', goal_region, 'Start', f)
-    time_max = 1000
+    time_max = 10000
 
     # Show goal regions
     

@@ -94,36 +94,37 @@ def RRT(initial_Stance, goal, map, time_max):
         p_rand = [randint(0, x_range), randint(0,y_range)] # random point in (x,y)
         distance, v_near = v_near_Generation(rrt_tree.root, p_rand)
 
-        print(v_near.f_sup)
-        print(v_near.f_swg)
-        print(v_near.f_swg_id)
+        # print(v_near.f_sup)
+        # print(v_near.f_swg)
+        # print(v_near.f_swg_id)
         
         """ Step 2) Generating a candidate vertex"""
         #Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
         candidate_swg_f, candidate_sup_f, candidate_id = motion_Primitive_selector(v_near)
         #print('candidate_sup-fot type:', type(candidate_sup_f), candidate_sup_f)
-        candidate_sup_f[2] = assign_height(candidate_sup_f, v_near.f_swg, map)
-        if candidate_sup_f[2] == False: # there isn't any object or surface in this point, so discard
-            print('Height fail')
+        candidate_sup_f[2] = assign_height( v_near.f_swg, candidate_sup_f, map)
+        if candidate_sup_f[2] == None:
             continue
+        #print(candidate_sup_f[2])
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
         r1_check = r1_feasibility(candidate_sup_f, map)
-        r2_check = r2_feasibility(candidate_sup_f, v_near.f_swg)
+        r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
         if r1_check == False:
-            #print('r1_check fail')
+            print('r1_check fail')
             continue # The current expansion attempt is aborted and a new iteration is started
         if r2_check == False:
-            #print('r2:check fail')
+            print('r2:check fail')
             continue
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
         """ Step 3) Choosing a parent"""
+        #print('VABENE')
         neighbors = neighborhood(v_candidate, rrt_tree.root)
         candidate_parent = v_near
         candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
         for neigh in neighbors:
-            if r2_feasibility(candidate_sup_f, neigh.f_swg): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
+            if r2_feasibility( neigh.f_swg, candidate_sup_f): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
                 if (cost_of_a_new_vertex(v_candidate, neigh))  < candidate_cost:
                     candidate_parent = neigh
                     candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
@@ -132,12 +133,12 @@ def RRT(initial_Stance, goal, map, time_max):
         v_candidate.cost = candidate_parent.cost + 1 #candidate_cost
         v_candidate.swg_id = candidate_id
         candidate_parent.children.append(v_candidate)
-        print( map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[3])
-        print('POOOOOOOOOOOO')
+        print( 'NEW FOOTSTEP',map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[3])
 
-        # if goal_Check(v_candidate, goal, map) is True:
-        #     print('PATH FOUND')
-        #     return rrt_tree
+
+        if goal_Check(v_candidate, goal, map) is True:
+            print('PATH FOUND')
+            return rrt_tree
                       
 
     print('ok')
@@ -230,9 +231,9 @@ def motion_Primitive_selector(node):
     Set of primitives U: 20 possible swing foot landing w.r.t the actual support foot
     For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
     The 2 possible angles are: the saggital_axis angle and (the sggital_axis + 30°)
-    The 2 possible side distances are: 12 units and 24 units from f_sup along y axis of f_sup, if f_sup is 'Right'
-                                      -12 units and -24 units  if f_sup is 'Left
-    The 5 possible forward distances are: -10,0,10,20,30 units along x axis of f_sup
+    The 2 possible side distances are: -12 units and -24 units from f_sup along y axis of f_sup, if f_swg is 'Right'
+                                      12 units and 24 units  if f_swg is 'Left
+    The 5 possible forward distances are: -10,0,10,20,30 cm along x axis of f_sup
     U_l = primitives for f_swg_id = 'Left'
     U_r = primitives for f_swg_id = 'Right
     (Recall: foot dimensions are 12x7 units)
@@ -245,9 +246,9 @@ def motion_Primitive_selector(node):
     s = Saggital_axis
 
     U_l = [[X_sup + 0.30, Y_sup + 0.12, 0, s], [X_sup + 0.20, Y_sup + 0.12, 0, s], [X_sup + 0.10, Y_sup + 0.12, 0, s], [X_sup , Y_sup + 0.12, 0, s], [X_sup -0.10, Y_sup + 0.12, 0, s],
-           [X_sup + 0.30, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.12, 0, s + (pi/6)], [X_sup , Y_sup + 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.12, 0, s + (pi/6)],
-           [X_sup + 0.30, Y_sup - 0.24, 0, s], [X_sup + 0.20, Y_sup - 0.24, 0, s], [X_sup + 0.10, Y_sup - 0.24, 0, s], [X_sup , Y_sup - 0.24, 0, s], [X_sup -0.10, Y_sup - 0.24, 0, s],
-           [X_sup + 0.30, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.24, 0, s + (pi/6)], [X_sup , Y_sup - 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.24, 0, s + (pi/6)]
+           [X_sup + 0.30, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.12, 0, s + (pi/6)], [X_sup , Y_sup + 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.12, 0, s + (pi/6)],
+           [X_sup + 0.30, Y_sup + 0.24, 0, s], [X_sup + 0.20, Y_sup + 0.24, 0, s], [X_sup + 0.10, Y_sup + 0.24, 0, s], [X_sup , Y_sup + 0.24, 0, s], [X_sup -0.10, Y_sup + 0.24, 0, s],
+           [X_sup + 0.30, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.24, 0, s + (pi/6)], [X_sup , Y_sup + 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.24, 0, s + (pi/6)]
             ]
 
     U_r = [[X_sup + 0.30, Y_sup - 0.12, 0, s], [X_sup + 0.20, Y_sup - 0.12, 0, s], [X_sup + 0.10, Y_sup - 0.12, 0, s], [X_sup , Y_sup - 0.12, 0, s], [X_sup -0.10, Y_sup - 0.12, 0, s],
@@ -274,26 +275,25 @@ def motion_Primitive_selector(node):
 
     
 
-def assign_height(actual_footprint, previous_footprint, map):
+def assign_height( previous_footprint, actual_footprint, map):
     h_prev = previous_footprint[2]
-    #print('h_prev :', type(h_prev))
-    cell = map.query(actual_footprint[0],actual_footprint[1])
-    #print('cell type:', type(cell), cell)
-    if cell == None:# DA CAMBIARE EVNTUALMENTE IN multi_levele_surface_map.py , I NONE ROMPONO LE SCATOLE
-        return False
-    h_actual = cell[0][0]
-    #print('h_actual type:', type(h_actual))
-    for v in cell: # choose the smallest height difference for actual_footprint position in the map
-        #print('v[0]', v[0])
-        # print('h_prev type:' , type(h_prev))
-        # print('h_actual type', type(h_actual))
-
-        if abs(v[0] - h_prev) < abs(h_actual - h_prev):
-            h_actual = v[0]
-            #print('NEW V:', h_actual)
+    #print('h_prev', h_prev)
+    actual_cell = map.query(actual_footprint[0], actual_footprint[1]) #This contains the tuples of obejcts heights
+    if actual_cell == None:
+        return None
+    #print(actual_cell)
+    for i,tuple in enumerate(actual_cell):
+        #print('VALORE ASSOLUTO ALTEZZA: ',abs(h_prev - tuple[0]))
+        if abs(h_prev - tuple[0]) < 0.25: #Se trovs un'altezza fattibilr la assegna ad h_actual
+            h_actual = tuple[0]
+            #('ALYEZZA ASSEGNATA')
+            for k in range(i+1, len(actual_cell)): #Dopo averla ssegnata prova con quelle rimanenti per vedere se sono meglio
+                if abs(h_prev - actual_cell[k][0]) < 0.25:
+                    if actual_cell[k][0] > h_actual:
+                        print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
+                        h_actual = actual_cell[k][0]
             return h_actual
-    print('OLD V:', h_actual)
-    return h_actual 
+    return None # questo caso è una sorta di r2 check solo sull' altezza, vuol dire che non cè nessun altezza possbiile da assegnare
 
 
 
@@ -323,45 +323,46 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     return  True
 
 
-def r2_feasibility(f, f_prev):
+def r2_feasibility( f_prev, f_actual):
     """
     This verifies that the footstep f is kinematically admissibile from the previous footstep f_prev
     The constraints on the 4 dimensions of a footstep( R3 x SO(2)) are chosen by construction, based on 
     dimensions of the robot and the environment. Deltas are the maximum increments acceptable.
     """
-    delta_x_min = 0.8
-    delta_x_max = 0.25
-    delta_y_min = 0.05
-    delta_y_max = 0.15
-    delta_z_min = 0
-    delta_z_max = 0.25
-    delta_theta_min = 0.54
-    delta_theta_max = 0.54
-    l = 1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
+    delta_x_neg = 0.45
+    delta_x_pos = 0.45
+    delta_y_neg = 100.30
+    delta_y_pos = 100.30
+    delta_z_neg = 0.25
+    delta_z_pos = 0.25
+    delta_theta_neg = 0.54
+    delta_theta_pos = 0.54
+    l = 0.1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
 
     rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
-    vars= np.array([[f[0] - f_prev[0]], [f[0] - f_prev[1]]]) # 2x1 matrix with x and y values
+    vars= np.array([[f_actual[0] - f_prev[0]], [f_actual[1] - f_prev[1]]]) # 2x1 matrix with x and y values
     xy_pos = np.matmul(rotation_matrix, vars) + np.array([[0], [+l]]) # positive l
     #print('xy_pos type:',type(xy_pos), xy_pos[0], xy_pos[1])
     xy_neg = np.matmul(rotation_matrix, vars) + np.array([[0], [-l]]) #negative l
     #print('f type', type(f[2]), '     ', 'f_prev type:', type(f_prev[2]) )
-    z = f[2] - f_prev[2]
-    theta = f[3] - f_prev[3]
+    z = f_actual[2] - f_prev[2]
+    theta = f_actual[3] - f_prev[3]
+    #print(type(xy_pos[1]), xy_pos[1])
 
-    if ((xy_pos[0] < - delta_x_min) or (xy_pos[0] > delta_x_max)): # For x the posutive case is enough since it has 0 in the summed vector
-        print('X fail, difference is', )
+    if ((xy_pos[0] < - delta_x_neg) or (xy_pos[0] > delta_x_pos)): # For x the posutive case is enough since it has 0 in the summed vector
+        #print('X fail, difference is',xy_pos[0]  )
         return False
-    if ((xy_pos[1] < -delta_y_min) or (xy_pos[1] > delta_y_max)):
-        print('Y fail')
+    if ((xy_pos[1] < (-1*delta_y_neg)) or (xy_pos[1] > delta_y_pos)):
+        #print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
         return False
-    if ((xy_neg[1] < -delta_y_min) or (xy_neg[1] > delta_y_max)):
-        print('Y fail')
+    if ((xy_neg[1] < (-1*delta_y_neg)) or (xy_neg[1] > delta_y_pos)):
+        #print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
         return False
-    if ((z < -delta_z_min) or (z > delta_z_max)):
-        print('Z fail')
+    if ((z < (-1*delta_z_neg)) or (z > delta_z_pos)):
+        #print('Z fail')
         return False
-    if ((theta < -delta_theta_min) or (theta > delta_theta_max)):
-        print('Theta fail')
+    if ((theta < (-1*delta_theta_neg)) or (theta > delta_theta_pos)):
+        #print('Theta fail')
         return False
     else:
         return True
