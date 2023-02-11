@@ -9,7 +9,7 @@ from utils import get_2d_rectangle_coordinates
 
 """
 Stance = (f_swing, f_support)
-Footstep f = (X_f, Y_f, Z_f, Theta_f)
+Footstep f = [X_f, Y_f, Z_f, Theta_f]
 
 For all the task we will have different reference frames. To go from the robot frame ( or its feet frames) to
 the word (immutable) frame it will be used a rotation matrix [[cos(a) -sin(a) 0],[sin(a) cos(a) 0], [0 0 1]] 
@@ -31,11 +31,12 @@ class Node():
     """
     Each node v of the tree is a stance v = (f_swg, f_sup)
     """
-    def __init__(self, f_swg, f_sup, parent = None, trajectory = []):
+    def __init__(self, f_swg, f_sup, cost = 0, parent = None, trajectory = []):
         self.f_swg = f_swg
         self.f_sup = f_sup
         self.parent = parent
         self.children = []
+        self.cost = cost
         self.f_swg_id = 'Right' # It always starts by moving right foot first
         self.trajectory = trajectory # Trajectory is the trajectory that , starting from the parent, brings to the actual node
     
@@ -87,7 +88,7 @@ def RRT(initial_Stance, goal, map, time_max):
         print('PATH FOUND')
         return rrt_tree
     
-    
+
     for i in range(time_max):
         """ Step 1) Selecting a vertex for expansion"""
         p_rand = [randint(0, x_range), randint(0,y_range)] # random point in (x,y)
@@ -95,31 +96,70 @@ def RRT(initial_Stance, goal, map, time_max):
 
         """ Step 2) Generating a candidate vertex"""
         #Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
-        candidate_swg_f, candidate_sup_f = motion_Primitive_selector(v_near)
+        candidate_swg_f, candidate_sup_f, candidate_id = motion_Primitive_selector(v_near)
         #print('candidate_sup-fot type:', type(candidate_sup_f), candidate_sup_f)
         candidate_sup_f[2] = assign_height(candidate_sup_f, v_near.f_swg, map)
         if candidate_sup_f[2] == False: # there isn't any object or surface in this point, so discard
-            pass
+            print('Height fail')
+            continue
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
         r1_check = r1_feasibility(candidate_sup_f, map)
         r2_check = r2_feasibility(candidate_sup_f, v_near.f_swg)
         if r1_check == False:
-            pass # The current expansion attempt is aborted and a new iteration is started
+            #print('r1_check fail')
+            continue # The current expansion attempt is aborted and a new iteration is started
         if r2_check == False:
-            pass
+            #print('r2:check fail')
+            continue
+        v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
         """ Step 3) Choosing a parent"""
-        # DEVO: DEFINIRE LA FUNZIONE NEIGHBORHOOD CHE DEFINISCE I NODI VICINI AD UN NODO,
-        #       DEFINIRE LA FUNZIONE DI COSTO DI UN VERTEX
+        neighbors = neighborhood(v_candidate, rrt_tree.root)
+        candidate_parent = v_near
+        candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        for neigh in neighbors:
+            if r2_feasibility(candidate_sup_f, neigh.f_swg): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
+                if (cost_of_a_new_vertex(v_candidate, neigh))  < candidate_cost:
+                    candidate_parent = neigh
+                    candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+        #now let's add the node to the tree, POI QUESTO PASSAGGIO VA FATTO DOPO IL PUNTO 4, ORA È UN TEST
+        v_candidate.parent = candidate_parent
+        v_candidate.cost = candidate_cost
+        v_candidate.id = candidate_id
+        candidate_parent.children.append(v_candidate)
+        print( map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[3])
+        print('POOOOOOOOOOOO')
+
+
+        #print()
+
+
+        if goal_Check(v_candidate, goal, map) is True:
+            print('PATH FOUND')
+            return rrt_tree
+                      
+
+
+
+
+
+
     
     print('ok')
         # if goal_Check(f_sup, goal, mlsm):
         #     return # TODO PATH la lista di passi da fare
 
 
-        
-            
+
+
+def goal_Check(node, goal, map):
+    f = node.f_sup
+    f_x, f_y = map.world2map_coordinates(f[0], f[1])
+    for goal_point in goal:
+        if f_x == goal_point[0] and f_y == goal_point[1]: # and f[2] == goal[2]:
+            return True
+    return False # Result is in MAP COORDS            
 
 
 
@@ -158,22 +198,24 @@ def footstep_to_footstep_metric(f1, f2, kj = 0.4):
     metric = norm(p) + kj*norm(angle)
     return metric # Result is in FOOT COORDS
 
-def neighborhood(vertex,node, r_neigh = 3):
+def neighborhood(vertex, tree, r_neigh = 3):
     # neighbors is a list with all the node of the tree that have a footstep_to_footstep metric < r_neigh w.r.t VERTEX
     neighbors = []
-    if len(node.children) == 0:
-        metric = footstep_to_footstep_metric(vertex.f_sup, node.f_sup)
+    if len(tree.children) == 0:
+        metric = footstep_to_footstep_metric(vertex.f_sup, tree.f_sup)
         if metric < r_neigh:
-            neighbors.append(node)
+            neighbors.append(tree)
         return neighbors
-    for child in node.children:
+    for child in tree.children:
         list_of_neighbors = neighborhood(vertex, child)
         for neigh in list_of_neighbors:
             neighbors.append(neigh)
     return neighbors
 
-def cost_of_a_vertex():
-    pass
+def cost_of_a_new_vertex(vertex, candidate_parent):
+    """ Returns an integer >= 0 as a cost to reach the vertex from the root"""
+    cost = candidate_parent.cost + 1 # Da inserire metrica tra vertex e parent AL POSTO DI 1
+    return cost
 
 
 
@@ -215,30 +257,19 @@ def motion_Primitive_selector(node):
 
     if node.f_swg_id == 'Left':
         new_support_foot = random.choice(U_l)
+        new_id = 'Right'
         #print('new_support_foot:', type(new_support_foot), '  ',new_support_foot)
-        pass
+
     if node.f_swg_id == 'Right':
         new_support_foot = random.choice(U_r )
+        new_id = 'Left'
         #print('new_support_foot:', type(new_support_foot),'  ',new_support_foot)
-        pass
+
 
     new_swing_foot = support
     
-    return new_swing_foot, new_support_foot #Result is in FOOT COORDS
+    return new_swing_foot, new_support_foot, new_id #Result is in FOOT COORDS
 
-
-def goal_Check(node, goal, map):
-    f = node.f_sup
-    f_x, f_y = map.world2map_coordinates(f[0], f[1])
-    for goal_point in goal:
-        if f_x == goal_point[0] and f_y == goal_point[1]: # and f[2] == goal[2]:
-            return True
-    return False # Result is in MAP COORDS
-
-
-
-    
-    
     
 
 def assign_height(actual_footprint, previous_footprint, map):
@@ -251,12 +282,15 @@ def assign_height(actual_footprint, previous_footprint, map):
     h_actual = cell[0][0]
     #print('h_actual type:', type(h_actual))
     for v in cell: # choose the smallest height difference for actual_footprint position in the map
-        #print('v[0] type:', type(v[0]), v[0])
+        #print('v[0]', v[0])
         # print('h_prev type:' , type(h_prev))
         # print('h_actual type', type(h_actual))
 
         if abs(v[0] - h_prev) < abs(h_actual - h_prev):
             h_actual = v[0]
+            #print('NEW V:', h_actual)
+            return h_actual
+    print('OLD V:', h_actual)
     return h_actual 
 
 
@@ -278,43 +312,14 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
 
     for ver in vertices:
         cell = map.query(ver[0], ver[1])
-        for obj in cell:
-            if obj[0] == f[3]:
-                continue
-            else:
-                return False
+        if cell == None:
+            return False
+        if  any((obj[0] > (f[3]-0.01) and obj[0] < (f[3]+0.01) ) for obj in cell):
+            continue
+        else:
+            return False
     return  True
 
-
-    # sa = f[3] # Saggital axis
-    # rotation_matrix = np.array(([cos(sa),-sin(sa)], [sin(sa), cos(sa)]))
-    # x_range = list(range(-6, +6+1))
-    # y_range = list(range(-4, +4+1))
-    # footstep = np.zeros([2,(len(x_range)*len(y_range))])
-    # counter = -1
-    # for j in x_range:
-    #     for k in y_range:
-    #         counter += 1
-    #         footstep[:,counter] = np.array([j,k])
-
-    # height = 'start'
-    # for i in range(0,footstep.shape[1]):
-    #     position = np.rint(np.matmul(rotation_matrix, footstep[:,i]))
-    #     position[0] = position[0] + f[0]
-    #     position[1] = position[1] + f[1]
-    #     #print(footstep[:,i], position)
-    #     if height == 'start':
-    #         if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
-    #             return False
-    #         height = map.mlsm[position[0].astype(int)][position[1].astype(int)][0]
-    #     else:
-    #         if map.mlsm[position[0].astype(int)][position[1].astype(int)] == None: #SEI FUORI DALLA MAPPA CALPESTABILE , NESSUN OGGETTO
-    #             return False
-    #         if map.mlsm[position[0].astype(int)][position[1].astype(int)][0] == height:
-    #             pass
-    #         else:
-    #             return False
-    # return True
 
 def r2_feasibility(f, f_prev):
     """
@@ -322,14 +327,14 @@ def r2_feasibility(f, f_prev):
     The constraints on the 4 dimensions of a footstep( R3 x SO(2)) are chosen by construction, based on 
     dimensions of the robot and the environment. Deltas are the maximum increments acceptable.
     """
-    delta_x_min = 1
-    delta_x_max = 1
-    delta_y_min = 1
-    delta_y_max = 1
-    delta_z_min = 1
-    delta_z_max = 1
-    delta_theta_min = 1
-    delta_theta_max = 1 
+    delta_x_min = 0.8
+    delta_x_max = 0.25
+    delta_y_min = 0.05
+    delta_y_max = 0.15
+    delta_z_min = 0
+    delta_z_max = 0.25
+    delta_theta_min = 0.54
+    delta_theta_max = 0.54
     l = 1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
 
     rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
@@ -342,14 +347,19 @@ def r2_feasibility(f, f_prev):
     theta = f[3] - f_prev[3]
 
     if ((xy_pos[0] < - delta_x_min) or (xy_pos[0] > delta_x_max)): # For x the posutive case is enough since it has 0 in the summed vector
+        print('X fail, difference is', )
         return False
     if ((xy_pos[1] < -delta_y_min) or (xy_pos[1] > delta_y_max)):
+        print('Y fail')
         return False
     if ((xy_neg[1] < -delta_y_min) or (xy_neg[1] > delta_y_max)):
+        print('Y fail')
         return False
     if ((z < -delta_z_min) or (z > delta_z_max)):
+        print('Z fail')
         return False
     if ((theta < -delta_theta_min) or (theta > delta_theta_max)):
+        print('Theta fail')
         return False
     else:
         return True
