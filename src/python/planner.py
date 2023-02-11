@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 from numpy import transpose,  cos ,sin
 import random
-from multi_level_surface_map import MultiLevelSurfaceMap
-from utils import get_2d_rectangle_coordinates
+from src.python.multi_level_surface_map import MultiLevelSurfaceMap
+from src.python.utils import get_2d_rectangle_coordinates
 
 """
 Stance = (f_swing, f_support)
@@ -81,8 +81,7 @@ def RRT(initial_Stance, goal, map, time_max):
     Map = multilevel surface map in 3D (x,y,z)
     """
     rrt_tree = Tree(initial_Stance[0], initial_Stance[1])
-    x_range = map.rows
-    y_range = map.columns
+    x_range, y_range = map.discrete_size
     #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
     if goal_Check(rrt_tree.root, goal, map) is True:
         print('PATH FOUND')
@@ -140,17 +139,20 @@ def RRT(initial_Stance, goal, map, time_max):
             return rrt_tree
                       
 
-
-
-
-
-
-    
     print('ok')
         # if goal_Check(f_sup, goal, mlsm):
         #     return # TODO PATH la lista di passi da fare
 
+    return retrieve_path(rrt_tree.root, [rrt_tree.root])
 
+
+
+def retrieve_path(node, steps):
+    for child in node.children:
+        steps.append(child)
+        steps = retrieve_path(child, steps)
+    
+    return steps
 
 
 def goal_Check(node, goal, map):

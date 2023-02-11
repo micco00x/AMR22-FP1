@@ -45,20 +45,18 @@ def main(world_json, resolution):
     # Show goal regions
     
     # Planning    
-    # best_plan = RRT(initial_stance, goal_region, map, time_max)
-    best_plan = [initial_stance]
+    nodes = RRT(initial_stance, goal_region, map, time_max)
     
     # Show footsteps 
-    for stance in best_plan:
-        print(len(stance))
-        for foot in stance:
-            vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), (0.12, 0.25), foot[3])
-            x = vertices[:,0]
-            y = vertices[:,1]
-            z = np.ones(4, dtype=np.float64)
-            z = z.dot(foot[2]+0.001)
-            foot_mesh = go.Mesh3d(x=x, y=y, z=z, color='cyan')
-            fig.add_trace(foot_mesh, row=1, col=2)
+    for node in nodes:
+        foot = node.f_swg
+        vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), (0.12, 0.25), foot[3])
+        x = vertices[:,0]
+        y = vertices[:,1]
+        z = np.ones(4, dtype=np.float64)
+        z = z.dot(foot[2]+0.001)
+        foot_mesh = go.Mesh3d(x=x, y=y, z=z, color='cyan')
+        fig.add_trace(foot_mesh, row=1, col=2)
         
         
     
