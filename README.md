@@ -21,8 +21,8 @@ Think about exploit:
 - Graph based on the connected surfaces. Arcs weighted by the value returnd by the distance function.
 - ...
 
-## Visualization
-
+## Show results
+To launch the planner and see the results execute:
 ```bash
-python src/python/visualization.py --world data/world_of_stairs.json
+python main.py --world data/world_of_stairs.json
 ```
