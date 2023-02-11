@@ -144,22 +144,25 @@ def rewiring(v_new, tree):
     h_max = 0.30 #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
     neighbors = neighborhood(v_new, tree) #define neighbors
-    for i in neighbors:
-        if i == v_new.parent: #if parents skip
+    for neighbor in neighbors:
+        if neighbor == v_new.parent: #if parents skip
             continue
 
-        if (Feasibility_check(v_new, i)): #check r1, r2, r3
-            if (v_new. cost + edge_cost(v_new, i)) < i.cost: #check if cost is less   ##############cost on tree (on each node)#########################
-                i.f_swg = v_new.f_sup    #change f_swg of the new child
-                i.is_Child(v_new)   #set new child of v_new
-                t_new = generate_trajectory(v_new.f_swg, i.f_sup) #calcolate new trajectory
+        if (r2_feasibility(neighbor, v_new) and (r3_feasibility(v_new.f_swg, neighbor.f_sup ))): #check r1, r2, r3
+            if (v_new. cost + edge_cost(v_new, neighbor)) < neighbor.cost: #check if cost is less   ##############cost on tree (on each node)#########################
+                neighbor.parent.children.remove(neighbor)
+                neighbor.f_swg = v_new.f_sup    #change f_swg of the new child
+                v_new.children.append(neighbor)   #set new child of v_new
+                neighbor.parent = v_new
+
+                t_new = generate_trajectory(v_new.f_swg, neighbor.f_sup) #calcolate new trajectory
+                neighbor.trajectory = t_new
                 #set new trajectory on tree
 
-                neighbors2 = neighborhood(i, tree)
-                for j in neighbors2:
-                    t_new = generate_trajectory(i.f_swg, j.f_sup) #calcolate new trajectory
+                new_neighbors = neighborhood(neighbor, tree)
+                for j in new_neighbors:
+                    t_new = generate_trajectory(neighbor.f_swg, j.f_sup) #calcolate new trajectory
                     #set new trajectory on tree
-
 
 
 
