@@ -82,17 +82,22 @@ def RRT(initial_Stance, goal, map, time_max):
     """
     rrt_tree = Tree(initial_Stance[0], initial_Stance[1])
     x_range, y_range = map.discrete_size
-    #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
-    if goal_Check(rrt_tree.root, goal, map) is True:
-        print('PATH FOUND')
-        return rrt_tree
+    # #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
+    # if goal_Check(rrt_tree.root, goal, map) is True:
+    #     print('PATH FOUND')
+    #     return rrt_tree
     
 
     for i in range(time_max):
+        print('Iteration: ', i)
         """ Step 1) Selecting a vertex for expansion"""
         p_rand = [randint(0, x_range), randint(0,y_range)] # random point in (x,y)
         distance, v_near = v_near_Generation(rrt_tree.root, p_rand)
 
+        print(v_near.f_sup)
+        print(v_near.f_swg)
+        print(v_near.f_swg_id)
+        
         """ Step 2) Generating a candidate vertex"""
         #Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
         candidate_swg_f, candidate_sup_f, candidate_id = motion_Primitive_selector(v_near)
@@ -124,34 +129,29 @@ def RRT(initial_Stance, goal, map, time_max):
                     candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
         #now let's add the node to the tree, POI QUESTO PASSAGGIO VA FATTO DOPO IL PUNTO 4, ORA È UN TEST
         v_candidate.parent = candidate_parent
-        v_candidate.cost = candidate_cost
-        v_candidate.id = candidate_id
+        v_candidate.cost = candidate_parent.cost + 1 #candidate_cost
+        v_candidate.swg_id = candidate_id
         candidate_parent.children.append(v_candidate)
         print( map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[3])
         print('POOOOOOOOOOOO')
 
-
-        #print()
-
-
-        if goal_Check(v_candidate, goal, map) is True:
-            print('PATH FOUND')
-            return rrt_tree
+        # if goal_Check(v_candidate, goal, map) is True:
+        #     print('PATH FOUND')
+        #     return rrt_tree
                       
 
     print('ok')
         # if goal_Check(f_sup, goal, mlsm):
         #     return # TODO PATH la lista di passi da fare
 
-    return retrieve_path(rrt_tree.root, [rrt_tree.root])
+    return retrieve_steps(rrt_tree.root, [(rrt_tree.root.f_sup, 'Left' if rrt_tree.root.f_swg_id == 'Right' else 'Right') ] )
 
 
 
-def retrieve_path(node, steps):
+def retrieve_steps(node, steps):
+    steps.append( (node.f_swg, node.f_swg_id) )
     for child in node.children:
-        steps.append(child)
-        steps = retrieve_path(child, steps)
-    
+        steps = retrieve_steps(child, steps)
     return steps
 
 
