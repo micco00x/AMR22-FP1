@@ -1,6 +1,7 @@
 import json
 from math import cos, sin
 import numpy as np
+import plotly.graph_objects as go
 
 def json2dict(json_file):
     dict = {}
