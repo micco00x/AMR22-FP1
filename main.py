@@ -10,27 +10,9 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
 # Our imports
-from src.python.utils import json2dict, rpy2rotation_matrix, get_z_rotation_matrix, get_3d_cuboid_coordinates
+from src.python.utils import json2dict, get_world_meshes, get_3d_cuboid_coordinates, get_2d_rectangle_coordinates
 from src.python.multi_level_surface_map import MultiLevelSurfaceMap
-from src.python.visualization import get_world_meshes
-
-
-def get_poly_collection(scene):
-    '''scene: a dictionary containing all the info about a scene. For each object it is specified the position of its centroind, its size and its orientation in a RPY-format.
-    This function will return a list of poligons that can be showed through matplotlib.'''
-    # TODO: separate boxes and flat surfaces
-    collection = []
-    for object in scene:
-        obj_size = scene[object]['size']
-        obj_orientation = scene[object]['orientation']
-        obj_position = scene[object]['position']
-        block = get_3d_cuboid_coordinates(obj_position, obj_size, obj_orientation)
-        collection.append( block )
-    collection = list(np.concatenate(collection))
-    return Poly3DCollection(collection, edgecolor=[0.5, 0.5, 0.5])
-    # return Poly3DCollection(collection, shade=True) # TODO: better but works only with matplotlib v.3.7 and above
-
-
+from src.python.planner import RRT
 
 
 def main(world_json, resolution):
@@ -51,8 +33,34 @@ def main(world_json, resolution):
         fig.add_trace(mesh, row=1, col=2)
     
     #RRT
+    f_swg = [0.45, -2.3, 0.00205, 0] 
+    f_sup = [0.65, -2.3, 0.00205, 0]
+    initial_stance = [f_sup, f_swg]
+    g = map.world2map_coordinates(1.85, 1.5)
+    f = map.world2map_coordinates(0.45, -2.3)
+    goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205], ] #FALSE GOAL REGION, IT NEVER ENDS
+    print('goal region:', goal_region, 'Start', f)
+    time_max = 1000
+
+    # Show goal regions
     
-    # Show footsteps
+    # Planning    
+    # best_plan = RRT(initial_stance, goal_region, map, time_max)
+    best_plan = [initial_stance]
+    
+    # Show footsteps 
+    for stance in best_plan:
+        print(len(stance))
+        for foot in stance:
+            vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), (0.12, 0.25), foot[3])
+            x = vertices[:,0]
+            y = vertices[:,1]
+            z = np.ones(4, dtype=np.float64)
+            z = z.dot(foot[2]+0.001)
+            foot_mesh = go.Mesh3d(x=x, y=y, z=z, color='cyan')
+            fig.add_trace(foot_mesh, row=1, col=2)
+        
+        
     
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), showlegend=False)
     fig.show()
