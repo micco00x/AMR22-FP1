@@ -124,3 +124,21 @@ def calculate_world_dimensions(world_dict):
             if pos[2] > z_range[1]: z_range[1] = pos[2] # new maximum found on the z axis
         
         return (x_range, y_range, z_range)
+    
+    
+def get_world_meshes(scene):
+    '''scene: a dictionary containing all the info about a scene. For each object it is specified the position of its centroind, its size and its orientation in a RPY-format.
+    This function will return a list of go.Mesh3d that can be showed through plotly.'''
+    meshes = []
+    for object in scene:
+        size = scene[object]['size']
+        orientation = scene[object]['orientation']
+        position = scene[object]['position'] # position of the centroid of the box
+        cuboid = get_3d_cuboid_coordinates(position, size, orientation)
+        i = 0
+        x = cuboid[:,0]
+        y = cuboid[:,1]
+        z = cuboid[:,2]
+        meshes.append(go.Mesh3d(x=x, y=y, z=z, alphahull=0, name=object))
+        
+    return meshes

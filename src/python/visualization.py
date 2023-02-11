@@ -13,22 +13,7 @@ from src.python.utils import json2dict, rpy2rotation_matrix, get_z_rotation_matr
 from src.python.multi_level_surface_map import MultiLevelSurfaceMap
 
 
-def get_world_meshes(scene):
-    '''scene: a dictionary containing all the info about a scene. For each object it is specified the position of its centroind, its size and its orientation in a RPY-format.
-    This function will return a list of go.Mesh3d that can be showed through plotly.'''
-    meshes = []
-    for object in scene:
-        size = scene[object]['size']
-        orientation = scene[object]['orientation']
-        position = scene[object]['position'] # position of the centroid of the box
-        cuboid = get_3d_cuboid_coordinates(position, size, orientation)
-        i = 0
-        x = np.array(cuboid[:,0])
-        y = np.array(cuboid[:,1])
-        z = np.array(cuboid[:,2])
-        meshes.append(go.Mesh3d(x=x, y=y, z=z, alphahull=0, name=object))
-        
-    return meshes
+
 
 
 def main(world_json, resolution):
