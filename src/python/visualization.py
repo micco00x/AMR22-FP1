@@ -9,49 +9,26 @@ from math import cos, sin
 import plotly.graph_objects as go
 
 # Our imports
-from utils import json2dict, rpy2rotation_matrix, get_z_rotation_matrix, get_3d_cuboid_coordinates
-from multi_level_surface_map import MultiLevelSurfaceMap
+from src.python.utils import json2dict, rpy2rotation_matrix, get_z_rotation_matrix, get_3d_cuboid_coordinates
+from src.python.multi_level_surface_map import MultiLevelSurfaceMap
 
 
-def get_poly_collection(scene):
+def get_world_meshes(scene):
     '''scene: a dictionary containing all the info about a scene. For each object it is specified the position of its centroind, its size and its orientation in a RPY-format.
-    This function will return a list of poligons that can be showed through matplotlib.'''
-    # TODO: separate boxes and flat surfaces
-    collection = []
+    This function will return a list of go.Mesh3d that can be showed through plotly.'''
+    meshes = []
     for object in scene:
-        obj_size = scene[object]['size']
-        obj_orientation = scene[object]['orientation']
-        obj_position = scene[object]['position']
-        block = get_3d_cuboid_coordinates(obj_position, obj_size, obj_orientation)
-        collection.append( block )
-    collection = list(np.concatenate(collection))
-    return Poly3DCollection(collection, edgecolor=[0.5, 0.5, 0.5])
-    # return Poly3DCollection(collection, shade=True) # TODO: better but works only with matplotlib v.3.7 and above
-
-
-def old_main(world_json, resolution):
-
-    # Multilevel map plot
-    map = MultiLevelSurfaceMap(world_json, resolution)
-    map.plot()
-
-    # World plot
-    world_figure = plt.figure('Wold of cubes')
-    ax = plt.subplot(projection='3d')
-    scene = json2dict(world_json)['boxes']
-    boxes = get_poly_collection(scene)
-    ax.add_collection(boxes)
-
-    # Axes labels
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    # Visualization boundaries:
-    ax.set_xlim([map.world_dimensions[0][0], map.world_dimensions[0][1]])
-    ax.set_ylim([map.world_dimensions[1][0], map.world_dimensions[1][1]])
-    ax.set_zlim([map.world_dimensions[2][0], map.world_dimensions[2][1]])
-
-    plt.show()
+        size = scene[object]['size']
+        orientation = scene[object]['orientation']
+        position = scene[object]['position'] # position of the centroid of the box
+        cuboid = get_3d_cuboid_coordinates(position, size, orientation)
+        i = 0
+        x = np.array(cuboid[:,0])
+        y = np.array(cuboid[:,1])
+        z = np.array(cuboid[:,2])
+        meshes.append(go.Mesh3d(x=x, y=y, z=z, alphahull=0, name=object))
+        
+    return meshes
 
 
 def main(world_json, resolution):
