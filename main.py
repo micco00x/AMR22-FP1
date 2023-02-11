@@ -33,14 +33,14 @@ def main(world_json, resolution):
         fig.add_trace(mesh, row=1, col=2)
     
     #RRT
-    foot = [0.45, -2.3, 0.00205, 0] 
+    f_swg = [0.45, -2.3, 0.00205, 0] 
     f_sup = [0.65, -2.3, 0.00205, 0]
-    initial_stance = (foot, f_sup)
+    initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
     goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205], ] #FALSE GOAL REGION, IT NEVER ENDS
     print('goal region:', goal_region, 'Start', f)
-    time_max = 10
+    time_max = 1000
 
     # Show goal regions
     
@@ -51,7 +51,6 @@ def main(world_json, resolution):
     for step in steps:
         foot = step[0]
         foot_id = step[1]
-        print(foot[3])
         vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), (0.15, 0.25), foot[3])
         x = vertices[:,0]
         y = vertices[:,1]
