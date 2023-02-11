@@ -11,7 +11,7 @@ import sympy
 
 
 #retunr True exists a feasible trajectory, otherwise return False
-def r3_feasibility(f_prev_swg, f_actual_sup, map):
+def r3_feasibility(v, f, f_prev, f_sup, map):
     """
     This verifies that the footstep from j-2 to j is collision free.
     To do so, we have to check that:
@@ -19,6 +19,7 @@ def r3_feasibility(f_prev_swg, f_actual_sup, map):
         - the foot trajectory doesn't collide with obstacles
     
     f = jth footstep
+    f_sup = support foot of the arrival position (j-1th footstep)
     f_prev = j-2th footstep
     v = vertex (mid point)
     """
@@ -29,19 +30,20 @@ def r3_feasibility(f_prev_swg, f_actual_sup, map):
     h_robot = 2 #altezza robot (iperparametro da definire) [2 m = ?] (deve essere maggiore dell'altezza originale)
     zb = 0.40 #altezza da terra in cui non si calcola il cylindro (dove permetto i movimenti) (iperparametro da definire) [40 cm = ?]
 
-    #h = h_robot - zb #height of the cylinder's mid point
+    x_mean = (f_sup[0] + f[0])/2
+    y_mean = (f_sup[1] + f[1])/2
+    z_mean = (f_sup[2] + f[2])/2
+    z_range = h_robot - zb
 
     #è piu un poligono che un cylindro
-    #check_collision
-    for z in range(v[2]+zb, v[2] + h_robot): #considering v[2] height of the foot of the robot (mid point on the floor)
-        for y in range(v[1]-r, v[1]+r):
-            for x in range(v[0]-r, v[0]+r):
-                if (map.query(x, y)): #check that there aren't obstacle on the patches of the cylinder
-                    return False
+    for x in range((x_mean-r), (x_mean+r)):
+        for y in range((y_mean-r), (y_mean+r)):
+            if (not (map.check_collision(x, y, (h_robot+z_mean), z_range))):
+                return False
     
 
     #FOOT TRAJECTORY CHECK
-    trajectory = generate_trajectory(f_prev_swg, f_actual_sup)
+    trajectory = generate_trajectory(f_prev, f)
     if trajectory == -1:
         return False
 
@@ -65,50 +67,20 @@ def generate_trajectory(f_prev, f):
         #GENERATE TRAJECTORY
         #equations to solve
 
-        #ELISSOIDE
-        #finding a, b and c we obtain the equations of the elissi, so we can derive more points (in the middle of the path)
-        #define variables
-        a, b, c = sympy.symbols("a b c", real=True)
-
-        #a(x-xC)2+b(y- yC)2+c(z-zC) 2=1
-
-        f_middle = [(f_prev[0]+f[0])/2, (f_prev[1]+f[1])/2, (f_prev[2]+f[2])/2] #middle point
-
-        #set equations equals to 0
-        eq1 = sympy.Eq(a * 2 * (f_prev[0] - f_middle[0])**2 + 2 * b * (f_prev[1] - f_middle[1])**2 + 2 * c * (f_prev[2] - f_middle[2])**2, 1)
-        eq2 = sympy.Eq(a * 2 * (f[0] - f_middle[0])**2 + 2 * b * (f[1] - f_middle[1])**2 + 2 * c * (f[2] - f_middle[2])**2, 1)
-        eq3 = 0 #???
-
-        #solve equations -> return an array of dictionaries with the values of each variables
-        res = sympy.solve([eq1, eq2, eq3])
-
-
         #OPTION 1
         #finding a, b and c we obtain the equations of the parabola, so we can derive more points (in the middle of the path)
         #define variables
         a, b, c = sympy.symbols("a b c", real=True)
 
+        #calcolate ipotenusa
+        ipotenusa = math.sqrt(((f[0]-f_prev[0])*(f[0]-f_prev[0])) + ((f[1]-f_prev[1])*(f[1]-f_prev[1])))
+        #i think i have a range (0, i) for x
+        #and starting height is 0, and arriving height is f[2]-f_prev[2]
+
         #set equations equals to 0
-        eq1 = sympy.Eq((-4*a*c) + b * b - h_max_set, 0)
-        eq2 = sympy.Eq((a * f_prev[0]* f_prev[0]) + (b * f_prev[0]) + c -f_prev[1], 0)
-        eq3 = sympy.Eq((a * f[0] * f[0]) + (b * f[0]) + c - f[1], 0)
-
-        #solve equations -> return an array of dictionaries with the values of each variables
-        res = sympy.solve([eq1, eq2, eq3])
-
-
-        #OPTION2
-        #i'm not sure about that
-        #use the middle point with the maximum height (because the step is always the same)
-
-        #define variables
-        a, b, c = sympy.symbols("a b c", real=True)
-
-        f_middle = [(f_prev[0]+f[0])/2, (f_prev[1]+f[1])/2, h_max_set] #middle point
-        #set equations equals to 0
-        eq1 = sympy.Eq((a * f_middle[0]* f_middle[0]) + (b * f_middle[0]) + c - f_middle[1], 0)
-        eq2 = sympy.Eq((a * f_prev[0]* f_prev[0]) + (b * f_prev[0]) + c -f_prev[1], 0)
-        eq3 = sympy.Eq((a * f[0] * f[0]) + (b * f[0]) + c - f[1], 0)
+        eq1 = sympy.Eq((-4*a)*h_max_set + (4*a*c) - b * b, 0) # -4a*h + 4ac - b^2 = 0
+        eq2 = sympy.Eq(c, 0) #because seet start of parabola in the origin
+        eq3 = sympy.Eq((a * ipotenusa * ipotenusa) + (b * ipotenusa) + c - (f[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
 
         #solve equations -> return an array of dictionaries with the values of each variables
         res = sympy.solve([eq1, eq2, eq3])
@@ -136,26 +108,22 @@ def generate_trajectory(f_prev, f):
 
         #da correggere anche sopra!!
 
-        check = 0
-        for i in (0, 4):
-            x, y, z = 0, 0, 0
-            if i < 2: #generate number on the first half of the step
-                x = random.randint(f_prev[0], f_middle[0])
-                y = random.randint(f_prev[1], f_middle[1])
-                #project sagittal axis (?)
-                z = sympy.symbols("z", real=True)
-                eq1 = sympy.Eq((a_par * f_middle[0]* f_middle[0]) + (b_par * f_middle[0]) + c_par - f_middle[1], 0)
+        interval = np.linspace(0, ipotenusa, num=5, endpoint=True) #num = number of value to generate in the interval
+        theta = math.atan2((f[1]-f_prev[1]), (f[0]-f_prev[0])) #angle to calcolate x,y on 3d world
 
-            if i >= 2:
-                x = random.randint(f_middle[0], f[0])
-                y = random.randint(f_middle[1], f[1])
-                #project sagittal axis (?)
-                z = sympy.symbols("z", real=True)
-                eq1 = sympy.Eq((a_par * f_middle[0]* f_middle[0]) + (b_par * f_middle[0]) + c_par - f_middle[1], 0)
-            
-            if map[x,y,z] != 0: #if is not free
-                check = -1
-                break
+        check = 0
+        for x_generated in interval:
+            #reconstruction  of the 3d coordinates
+            z = (a * x_generated * x_generated) + (b* x_generated) + c
+            x = (x_generated * math.cos(theta)) + f_prev[0]
+            y = (x_generated * math.sin(theta)) + f_prev[1]
+
+            #check dimension foot
+            #orientation of the foot (?)
+            for x_check in range(x-0.03, x+0.03):
+                for y_check in range(y-0.06, y+0.06):
+                    if (not (map.check_collision(x_check, y_check, z))):
+                        return -1
         
         if check == 0:
             return trajectory #feasible trajectory returned
@@ -171,11 +139,11 @@ def generate_trajectory(f_prev, f):
 
 
 
-def rewiring(v_new):
+def rewiring(v_new, tree):
     h_min = 0.05 #minimum height for the step (iperparametro da definire) [5 cm = ?]
     h_max = 0.30 #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
-    neighbors = neighborhood(v_new) #define neighbors
+    neighbors = neighborhood(v_new, tree) #define neighbors
     for neighbor in neighbors:
         if neighbor == v_new.parent: #if parents skip
             continue
@@ -191,11 +159,10 @@ def rewiring(v_new):
                 neighbor.trajectory = t_new
                 #set new trajectory on tree
 
-                new_neighbors = neighborhood(neighbor)
+                new_neighbors = neighborhood(neighbor, tree)
                 for j in new_neighbors:
                     t_new = generate_trajectory(neighbor.f_swg, j.f_sup) #calcolate new trajectory
                     #set new trajectory on tree
-
 
 
 
