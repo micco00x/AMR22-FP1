@@ -83,9 +83,9 @@ def RRT(initial_Stance, goal, map, time_max):
     rrt_tree = Tree(initial_Stance[0], initial_Stance[1])
     x_range, y_range = map.discrete_size
     # #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
-    # if goal_Check(rrt_tree.root, goal, map) is True:
-    #     print('PATH FOUND')
-    #     return rrt_tree
+    if goal_Check(rrt_tree.root, goal, map) is True:
+        print('PATH FOUND')
+        return rrt_tree
     
 
     for i in range(time_max):
@@ -110,12 +110,12 @@ def RRT(initial_Stance, goal, map, time_max):
 
         r1_check = r1_feasibility(candidate_sup_f, map)
         r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
-        #if r1_check == False:
-        #    print('r1_check fail')
-        #   continue # The current expansion attempt is aborted and a new iteration is started
-        # if r2_check == False:
-        #     print('r2:check fail')
-        #     continue
+        if r1_check == False:
+           print('r1_check fail')
+           continue # The current expansion attempt is aborted and a new iteration is started
+        if r2_check == False:
+            print('r2:check fail')
+            continue
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
         """ Step 3) Choosing a parent"""
@@ -260,21 +260,11 @@ def motion_Primitive_selector(node):
 
     new_support_foot = [ x_sup + random.choice(p_x), y_sup + random.choice(p_y), 0, theta_sup + random.choice(p_th)]
 
-    
-    # U_l = [[X_sup + 0.30, Y_sup + 0.12, 0, s], [X_sup + 0.20, Y_sup + 0.12, 0, s], [X_sup + 0.10, Y_sup + 0.12, 0, s], [X_sup , Y_sup + 0.12, 0, s], [X_sup -0.10, Y_sup + 0.12, 0, s],
-    #        [X_sup + 0.30, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.12, 0, s + (pi/6)], [X_sup , Y_sup + 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.12, 0, s + (pi/6)],
-    #        [X_sup + 0.30, Y_sup + 0.24, 0, s], [X_sup + 0.20, Y_sup + 0.24, 0, s], [X_sup + 0.10, Y_sup + 0.24, 0, s], [X_sup , Y_sup + 0.24, 0, s], [X_sup -0.10, Y_sup + 0.24, 0, s],
-    #        [X_sup + 0.30, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.24, 0, s + (pi/6)], [X_sup , Y_sup + 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.24, 0, s + (pi/6)]
-    #         ]
-
-    # U_r = [[X_sup + 0.30, Y_sup - 0.12, 0, s], [X_sup + 0.20, Y_sup - 0.12, 0, s], [X_sup + 0.10, Y_sup - 0.12, 0, s], [X_sup , Y_sup - 0.12, 0, s], [X_sup -0.10, Y_sup - 0.12, 0, s],
-    #        [X_sup + 0.30, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.12, 0, s + (pi/6)], [X_sup , Y_sup - 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.12, 0, s + (pi/6)],
-    #        [X_sup + 0.30, Y_sup - 0.24, 0, s], [X_sup + 0.20, Y_sup - 0.24, 0, s], [X_sup + 0.10, Y_sup - 0.24, 0, s], [X_sup , Y_sup - 0.24, 0, s], [X_sup -0.10, Y_sup - 0.24, 0, s],
-    #        [X_sup + 0.30, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.24, 0, s + (pi/6)], [X_sup , Y_sup - 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.24, 0, s + (pi/6)]
-    #         ]
 
     inverse_rot = np.linalg.inv(rot)
-    new_support_foot[:-1] = inverse_rot.dot(new_support_foot[:-1])  
+    new_support_foot[:-1] = inverse_rot.dot(new_support_foot[:-1])
+    for i in range(0, 4):
+        new_support_foot[i] = round(new_support_foot[i], 5)
     
 
     # if node.f_swg_id == 'Left':
@@ -327,18 +317,20 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
 
     x = f[0]
     y = f[1]
-    orientation = f[2]
+    orientation = f[3]
     size = [0.26, 0.14] #Foot size of the robot
     vertices = get_2d_rectangle_coordinates([x,y], size, orientation)
+    #print('Vetices: ', vertices)
 
     for ver in vertices:
         cell = map.query(ver[0], ver[1])
         if cell == None:
             return False
-        if  any((obj[0] > (f[3]-0.01) and obj[0] < (f[3]+0.01) ) for obj in cell):
+        if  any((obj[0] >= (f[2]) and obj[0] <= (f[2]) ) for obj in cell):
             continue
         else:
             return False
+    #print('Ce la fa')
     return  True
 
 
