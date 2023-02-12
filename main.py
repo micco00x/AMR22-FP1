@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -15,7 +17,7 @@ from src.python.multi_level_surface_map import MultiLevelSurfaceMap
 from src.python.planner import RRT
 
 
-def main(world_json, resolution):
+def main(world_json, resolution, time_max):
     fig = make_subplots(
     cols=2,
     specs=[[{"type": "scene"}, {"type": "scene"}]],
@@ -34,13 +36,12 @@ def main(world_json, resolution):
     
     #RRT: CAMBIO I PIEDI INIZIALI E LI METTO VICINO A DELLE SCALE PER VEDERE SE CAMBIA L' ALTEZZA IN DEI NODI SUCCESSIVI
     f_swg = [-0.45, 1, 0.00205, 0] 
-    f_sup = [-0.55, 1, 0.00205, 0]
+    f_sup = [-0.65, 1, 0.00205, 0]
     initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
     goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205], ] #FALSE GOAL REGION, IT NEVER ENDS
     print('goal region:', goal_region, 'Start', f)
-    time_max = 10000
 
     # Show goal regions
     
@@ -70,6 +71,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--world-json', type=Path, default='data/world_of_stairs.json', help='json file containing the information about the boxes contained in the world')
     parser.add_argument('--resolution', type=float, default=0.02, help='Set the map resolution')
+    parser.add_argument('--time-max', type=int, default=10000, help='Set the map resolution')
     opt = parser.parse_args()
     return opt
 

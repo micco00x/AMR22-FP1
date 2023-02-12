@@ -22,7 +22,10 @@ Think about exploit:
 - ...
 
 ## Show results
-To launch the planner and see the results execute:
+To launch the planner with default settings:
 ```bash
-python main.py --world data/world_of_stairs.json
+./main.py --world data/world_of_stairs.json --time-max 10000 --resolution 0.02
 ```
+- **world**: path to the json containing all the info about the objects in the scene
+- **time-max**: number of iterations of the RRT
+- **resolution**: size for the world discretization
