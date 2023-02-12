@@ -12,6 +12,7 @@ class MultiLevelSurfaceMap():
         
         world_dict = json2dict(world_json)
         self.world_dimensions = calculate_world_dimensions(world_dict)
+        
         rows = math.ceil((self.world_dimensions[0][1] - self.world_dimensions[0][0])/self.resolution)
         columns = math.ceil((self.world_dimensions[1][1] - self.world_dimensions[1][0])/self.resolution)
         self.discrete_size = (rows, columns)
@@ -46,7 +47,13 @@ class MultiLevelSurfaceMap():
                     
                     delta_y += self.resolution*0.9
                 delta_x += self.resolution*0.9
-                
+        
+        # Sort elements
+        for i in range(self.discrete_size[0]):
+            for j in range(self.discrete_size[1]):
+                cell = self.mlsm[i][j]
+                if cell and len(cell)>1:
+                    self.mlsm[i][j].sort(key=lambda cell: cell[0])
             
     def world2map_coordinates(self, x, y):
         '''Given the continous coordinates of a point, returns the indexes of the mlsm cell that contains that point'''
