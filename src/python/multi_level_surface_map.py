@@ -53,7 +53,7 @@ class MultiLevelSurfaceMap():
             for j in range(self.discrete_size[1]):
                 cell = self.mlsm[i][j]
                 if cell and len(cell)>1:
-                    self.mlsm[i][j].sort(key=lambda cell: cell[0])
+                    self.mlsm[i][j].sort(key=lambda cell: cell[0], reverse=True)
             
     def world2map_coordinates(self, x, y):
         '''Given the continous coordinates of a point, returns the indexes of the mlsm cell that contains that point'''
@@ -87,7 +87,7 @@ class MultiLevelSurfaceMap():
     
     
     def as_numpy(self, stride=1):
-        '''Returns the function as numpy array.
+        '''Returns the map as numpy array.
         If you want to decrease the resolution of the map change the stride to an higher value.'''
         assert stride >= 1
         x = []
@@ -117,7 +117,7 @@ class MultiLevelSurfaceMap():
             size=7,#0.02/map.resolution,
             color=z,                # set color to an array/list of desired values
             colorscale='Viridis',   # choose a colorscale
-            opacity=0.8
+            # opacity=0.9
             )
         )
         return showable
