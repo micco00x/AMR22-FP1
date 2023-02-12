@@ -5,7 +5,7 @@ from numpy.linalg import norm
 from numpy import transpose,  cos ,sin
 import random
 from src.python.multi_level_surface_map import MultiLevelSurfaceMap
-from src.python.utils import get_2d_rectangle_coordinates
+from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix
 
 """
 Stance = (f_swing, f_support)
@@ -110,16 +110,16 @@ def RRT(initial_Stance, goal, map, time_max):
 
         r1_check = r1_feasibility(candidate_sup_f, map)
         r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
-        if r1_check == False:
-            print('r1_check fail')
-            continue # The current expansion attempt is aborted and a new iteration is started
-        if r2_check == False:
-            print('r2:check fail')
-            continue
+        #if r1_check == False:
+        #    print('r1_check fail')
+        #   continue # The current expansion attempt is aborted and a new iteration is started
+        # if r2_check == False:
+        #     print('r2:check fail')
+        #     continue
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
         """ Step 3) Choosing a parent"""
-        #print('VABENE')
+        print('VABENE')
         neighbors = neighborhood(v_candidate, rrt_tree.root)
         candidate_parent = v_near
         candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
@@ -131,9 +131,10 @@ def RRT(initial_Stance, goal, map, time_max):
         #now let's add the node to the tree, POI QUESTO PASSAGGIO VA FATTO DOPO IL PUNTO 4, ORA È UN TEST
         v_candidate.parent = candidate_parent
         v_candidate.cost = candidate_parent.cost + 1 #candidate_cost
-        v_candidate.swg_id = candidate_id
+        v_candidate.f_swg_id = candidate_id
         candidate_parent.children.append(v_candidate)
         print( 'NEW FOOTSTEP',map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[3])
+        print('FOOTSTEP ID:', v_candidate.f_swg_id )
 
 
         if goal_Check(v_candidate, goal, map) is True:
@@ -232,7 +233,7 @@ def motion_Primitive_selector(node):
     For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
     The 2 possible angles are: the saggital_axis angle and (the sggital_axis + 30°)
     The 2 possible side distances are: -12 units and -24 units from f_sup along y axis of f_sup, if f_swg is 'Right'
-                                      12 units and 24 units  if f_swg is 'Left
+                                      12 cm and 24 cm  if f_swg is 'Left
     The 5 possible forward distances are: -10,0,10,20,30 cm along x axis of f_sup
     U_l = primitives for f_swg_id = 'Left'
     U_r = primitives for f_swg_id = 'Right
@@ -240,36 +241,54 @@ def motion_Primitive_selector(node):
     
     """
     swing = node.f_swg
-    support = node.f_sup 
-    X_sup, Y_sup, Z_sup, Theta_sup = support
-    Saggital_axis = (swing[3] + support[3]) / 2 
-    s = Saggital_axis
+    support = node.f_sup
+    saggital_axis = (swing[3] + support[3]) / 2 
+    s = saggital_axis
+    rot = get_z_rotation_matrix(saggital_axis)
+    swing[:-1] = rot.dot(swing[:-1])
+    support[:-1] = rot.dot(support[:-1])
+    
+    x_sup, y_sup, z_sup, theta_sup = support
 
-    U_l = [[X_sup + 0.30, Y_sup + 0.12, 0, s], [X_sup + 0.20, Y_sup + 0.12, 0, s], [X_sup + 0.10, Y_sup + 0.12, 0, s], [X_sup , Y_sup + 0.12, 0, s], [X_sup -0.10, Y_sup + 0.12, 0, s],
-           [X_sup + 0.30, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.12, 0, s + (pi/6)], [X_sup , Y_sup + 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.12, 0, s + (pi/6)],
-           [X_sup + 0.30, Y_sup + 0.24, 0, s], [X_sup + 0.20, Y_sup + 0.24, 0, s], [X_sup + 0.10, Y_sup + 0.24, 0, s], [X_sup , Y_sup + 0.24, 0, s], [X_sup -0.10, Y_sup + 0.24, 0, s],
-           [X_sup + 0.30, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.24, 0, s + (pi/6)], [X_sup , Y_sup + 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.24, 0, s + (pi/6)]
-            ]
+    # x = 1 if node.f_swg_id == 'Left' else -1
 
-    U_r = [[X_sup + 0.30, Y_sup - 0.12, 0, s], [X_sup + 0.20, Y_sup - 0.12, 0, s], [X_sup + 0.10, Y_sup - 0.12, 0, s], [X_sup , Y_sup - 0.12, 0, s], [X_sup -0.10, Y_sup - 0.12, 0, s],
-           [X_sup + 0.30, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.12, 0, s + (pi/6)], [X_sup , Y_sup - 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.12, 0, s + (pi/6)],
-           [X_sup + 0.30, Y_sup - 0.24, 0, s], [X_sup + 0.20, Y_sup - 0.24, 0, s], [X_sup + 0.10, Y_sup - 0.24, 0, s], [X_sup , Y_sup - 0.24, 0, s], [X_sup -0.10, Y_sup - 0.24, 0, s],
-           [X_sup + 0.30, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.24, 0, s + (pi/6)], [X_sup , Y_sup - 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.24, 0, s + (pi/6)]
-            ]
-                    
+    new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
 
-    if node.f_swg_id == 'Left':
-        new_support_foot = random.choice(U_l)
-        new_id = 'Right'
-        #print('new_support_foot:', type(new_support_foot), '  ',new_support_foot)
+    p_x = [-0.10, 0, 0.10, 0.20, 0.30]
+    p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
+    p_th = [-(pi/6), 0, +(pi/6)]
 
-    if node.f_swg_id == 'Right':
-        new_support_foot = random.choice(U_r )
-        new_id = 'Left'
-        #print('new_support_foot:', type(new_support_foot),'  ',new_support_foot)
+    new_support_foot = [ x_sup + random.choice(p_x), y_sup + random.choice(p_y), z_sup, theta_sup + random.choice(p_th)]
+
+    
+    # U_l = [[X_sup + 0.30, Y_sup + 0.12, 0, s], [X_sup + 0.20, Y_sup + 0.12, 0, s], [X_sup + 0.10, Y_sup + 0.12, 0, s], [X_sup , Y_sup + 0.12, 0, s], [X_sup -0.10, Y_sup + 0.12, 0, s],
+    #        [X_sup + 0.30, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.12, 0, s + (pi/6)], [X_sup , Y_sup + 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.12, 0, s + (pi/6)],
+    #        [X_sup + 0.30, Y_sup + 0.24, 0, s], [X_sup + 0.20, Y_sup + 0.24, 0, s], [X_sup + 0.10, Y_sup + 0.24, 0, s], [X_sup , Y_sup + 0.24, 0, s], [X_sup -0.10, Y_sup + 0.24, 0, s],
+    #        [X_sup + 0.30, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup + 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup + 0.24, 0, s + (pi/6)], [X_sup , Y_sup + 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup + 0.24, 0, s + (pi/6)]
+    #         ]
+
+    # U_r = [[X_sup + 0.30, Y_sup - 0.12, 0, s], [X_sup + 0.20, Y_sup - 0.12, 0, s], [X_sup + 0.10, Y_sup - 0.12, 0, s], [X_sup , Y_sup - 0.12, 0, s], [X_sup -0.10, Y_sup - 0.12, 0, s],
+    #        [X_sup + 0.30, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.12, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.12, 0, s + (pi/6)], [X_sup , Y_sup - 0.12, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.12, 0, s + (pi/6)],
+    #        [X_sup + 0.30, Y_sup - 0.24, 0, s], [X_sup + 0.20, Y_sup - 0.24, 0, s], [X_sup + 0.10, Y_sup - 0.24, 0, s], [X_sup , Y_sup - 0.24, 0, s], [X_sup -0.10, Y_sup - 0.24, 0, s],
+    #        [X_sup + 0.30, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.20, Y_sup - 0.24, 0, s + (pi/6)], [X_sup + 0.10, Y_sup - 0.24, 0, s + (pi/6)], [X_sup , Y_sup - 0.24, 0, s + (pi/6)], [X_sup -0.10, Y_sup - 0.24, 0, s + (pi/6)]
+    #         ]
+
+    inverse_rot = np.linalg.inv(rot)
+    new_support_foot[:-1] = inverse_rot.dot(new_support_foot[:-1])  
+    
+
+    # if node.f_swg_id == 'Left':
+    #     new_support_foot = random.choice(U_l)
+    #     new_id = 'Right'
+    #     #print('new_support_foot:', type(new_support_foot), '  ',new_support_foot)
+
+    # if node.f_swg_id == 'Right':
+    #     new_support_foot = random.choice(U_r )
+    #     new_id = 'Left'
+    #     #print('new_support_foot:', type(new_support_foot),'  ',new_support_foot)
 
 
-    new_swing_foot = support
+    new_swing_foot = node.f_sup
     
     return new_swing_foot, new_support_foot, new_id #Result is in FOOT COORDS
 
@@ -286,11 +305,11 @@ def assign_height( previous_footprint, actual_footprint, map):
         #print('VALORE ASSOLUTO ALTEZZA: ',abs(h_prev - tuple[0]))
         if abs(h_prev - tuple[0]) < 0.25: #Se trovs un'altezza fattibilr la assegna ad h_actual
             h_actual = tuple[0]
-            #('ALYEZZA ASSEGNATA')
+            #print('ALYEZZA ASSEGNATA')
             for k in range(i+1, len(actual_cell)): #Dopo averla ssegnata prova con quelle rimanenti per vedere se sono meglio
                 if abs(h_prev - actual_cell[k][0]) < 0.25:
                     if actual_cell[k][0] > h_actual:
-                        print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
+                        #print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
                         h_actual = actual_cell[k][0]
             return h_actual
     return None # questo caso è una sorta di r2 check solo sull' altezza, vuol dire che non cè nessun altezza possbiile da assegnare
@@ -335,8 +354,8 @@ def r2_feasibility( f_prev, f_actual):
     delta_y_pos = 100.30
     delta_z_neg = 0.25
     delta_z_pos = 0.25
-    delta_theta_neg = 0.54
-    delta_theta_pos = 0.54
+    delta_theta_neg = 3
+    delta_theta_pos = 3
     l = 0.1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
 
     rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
@@ -350,19 +369,19 @@ def r2_feasibility( f_prev, f_actual):
     #print(type(xy_pos[1]), xy_pos[1])
 
     if ((xy_pos[0] < - delta_x_neg) or (xy_pos[0] > delta_x_pos)): # For x the posutive case is enough since it has 0 in the summed vector
-        #print('X fail, difference is',xy_pos[0]  )
+        print('X fail, difference is',xy_pos[0]  )
         return False
     if ((xy_pos[1] < (-1*delta_y_neg)) or (xy_pos[1] > delta_y_pos)):
-        #print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
+        print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
         return False
     if ((xy_neg[1] < (-1*delta_y_neg)) or (xy_neg[1] > delta_y_pos)):
-        #print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
+        print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
         return False
     if ((z < (-1*delta_z_neg)) or (z > delta_z_pos)):
-        #print('Z fail')
+        print('Z fail')
         return False
     if ((theta < (-1*delta_theta_neg)) or (theta > delta_theta_pos)):
-        #print('Theta fail')
+        print('Theta fail')
         return False
     else:
         return True
