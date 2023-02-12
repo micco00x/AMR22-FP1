@@ -105,7 +105,7 @@ def RRT(initial_Stance, goal, map, time_max):
         candidate_sup_f[2] = assign_height( v_near.f_swg, candidate_sup_f, map)
         if candidate_sup_f[2] == None:
             continue
-        #print(candidate_sup_f[2])
+        print(candidate_sup_f[2])
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
         r1_check = r1_feasibility(candidate_sup_f, map)
@@ -254,11 +254,11 @@ def motion_Primitive_selector(node):
 
     new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
 
-    p_x = [-0.10, 0, 0.10, 0.20, 0.30]
+    p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
     p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
     p_th = [-(pi/6), 0, +(pi/6)]
 
-    new_support_foot = [ x_sup + random.choice(p_x), y_sup + random.choice(p_y), z_sup, theta_sup + random.choice(p_th)]
+    new_support_foot = [ x_sup + random.choice(p_x), y_sup + random.choice(p_y), 0, theta_sup + random.choice(p_th)]
 
     
     # U_l = [[X_sup + 0.30, Y_sup + 0.12, 0, s], [X_sup + 0.20, Y_sup + 0.12, 0, s], [X_sup + 0.10, Y_sup + 0.12, 0, s], [X_sup , Y_sup + 0.12, 0, s], [X_sup -0.10, Y_sup + 0.12, 0, s],
@@ -294,7 +294,7 @@ def motion_Primitive_selector(node):
 
     
 
-def assign_height( previous_footprint, actual_footprint, map):
+def assign_height(previous_footprint, actual_footprint, map):
     h_prev = previous_footprint[2]
     #print('h_prev', h_prev)
     actual_cell = map.query(actual_footprint[0], actual_footprint[1]) #This contains the tuples of obejcts heights
@@ -305,9 +305,9 @@ def assign_height( previous_footprint, actual_footprint, map):
         #print('VALORE ASSOLUTO ALTEZZA: ',abs(h_prev - tuple[0]))
         if abs(h_prev - tuple[0]) < 0.25: #Se trovs un'altezza fattibilr la assegna ad h_actual
             h_actual = tuple[0]
-            #print('ALYEZZA ASSEGNATA')
+            #print('ALYEZZA ASSEGNATA: ', actual_cell[i])
             for k in range(i+1, len(actual_cell)): #Dopo averla ssegnata prova con quelle rimanenti per vedere se sono meglio
-                if abs(h_prev - actual_cell[k][0]) < 0.25:
+                if abs(h_prev - actual_cell[k][0]) < 0.30:
                     if actual_cell[k][0] > h_actual:
                         #print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
                         h_actual = actual_cell[k][0]
@@ -369,19 +369,19 @@ def r2_feasibility( f_prev, f_actual):
     #print(type(xy_pos[1]), xy_pos[1])
 
     if ((xy_pos[0] < - delta_x_neg) or (xy_pos[0] > delta_x_pos)): # For x the posutive case is enough since it has 0 in the summed vector
-        print('X fail, difference is',xy_pos[0]  )
+        #print('X fail, difference is',xy_pos[0]  )
         return False
     if ((xy_pos[1] < (-1*delta_y_neg)) or (xy_pos[1] > delta_y_pos)):
-        print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
+        #print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
         return False
     if ((xy_neg[1] < (-1*delta_y_neg)) or (xy_neg[1] > delta_y_pos)):
-        print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
+        #print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
         return False
     if ((z < (-1*delta_z_neg)) or (z > delta_z_pos)):
-        print('Z fail')
+       # print('Z fail')
         return False
     if ((theta < (-1*delta_theta_neg)) or (theta > delta_theta_pos)):
-        print('Theta fail')
+        #print('Theta fail')
         return False
     else:
         return True
