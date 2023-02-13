@@ -278,24 +278,20 @@ def motion_Primitive_selector(node):
 
     
 
-def assign_height(previous_footprint, actual_footprint, map):
+def assign_height(previous_footprint, current_footprint, map):
     h_prev = previous_footprint[2]
-    #print('h_prev', h_prev)
-    actual_cell = map.query(actual_footprint[0], actual_footprint[1]) #This contains the tuples of obejcts heights
-    if actual_cell == None:
-        return None
-    #print(actual_cell)
-    for i,tuple in enumerate(actual_cell):
-        #print('VALORE ASSOLUTO ALTEZZA: ',abs(h_prev - tuple[0]))
-        if abs(h_prev - tuple[0]) < 0.25: #Se trovs un'altezza fattibilr la assegna ad h_actual
-            h_actual = tuple[0]
-            #print('ALYEZZA ASSEGNATA: ', actual_cell[i])
-            for k in range(i+1, len(actual_cell)): #Dopo averla ssegnata prova con quelle rimanenti per vedere se sono meglio
-                if abs(h_prev - actual_cell[k][0]) < 0.30:
-                    if actual_cell[k][0] > h_actual:
-                        #print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
-                        h_actual = actual_cell[k][0]
-            return h_actual
+    cell = map.query(current_footprint[0], current_footprint[1]) #This contains the tuples of obejcts heights
+    if cell == None: return None
+    for i, object in enumerate(cell):
+        surface_height = object[0]
+        if abs(h_prev - surface_height) < 0.35: #Se trovs un'altezza fattibilr la assegna ad h_actual
+            return surface_height
+            # for k in range(i+1, len(actual_cell)): #Dopo averla ssegnata prova con quelle rimanenti per vedere se sono meglio
+            #     if abs(h_prev - actual_cell[k][0]) < 0.30:
+            #         if actual_cell[k][0] > h_actual:
+            #             #print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
+            #             h_actual = actual_cell[k][0]
+            # return h_actual
     return None # questo caso è una sorta di r2 check solo sull' altezza, vuol dire che non cè nessun altezza possbiile da assegnare
 
 
