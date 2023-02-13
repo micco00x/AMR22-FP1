@@ -35,8 +35,8 @@ def main(world_json, resolution, time_max):
         fig.add_trace(mesh, row=1, col=2)
     
     #RRT: CAMBIO I PIEDI INIZIALI E LI METTO VICINO A DELLE SCALE PER VEDERE SE CAMBIA L' ALTEZZA IN DEI NODI SUCCESSIVI
-    f_swg = [-0.45, 1, 0.00205, 0] 
-    f_sup = [-0.65, 1, 0.00205, 0]
+    f_swg = [1.65, 2, 0.00020, -np.pi/2] 
+    f_sup = [1.85, 2, 0.00020, -np.pi/2]
     initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
@@ -49,20 +49,24 @@ def main(world_json, resolution, time_max):
     steps = RRT(initial_stance, goal_region, map, time_max)
     
     # Show footsteps 
-    for step in steps:
+    for i, step in enumerate(steps):
         foot = step[0]
         foot_id = step[1]
-        vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), (0.15, 0.25), foot[3])
+        print('Footprint '+ str(i) +':\t', foot, '\t', foot_id)
+        vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), (0.24, 0.14), foot[3])
         x = vertices[:,0]
         y = vertices[:,1]
         z = np.ones(4, dtype=np.float64)
-        z = z.dot(foot[2]+0.001)
-        foot_mesh = go.Mesh3d(x=x, y=y, z=z, color='cyan' if foot_id == 'Right' else 'red')
+        z = z.dot(foot[2]+0.001) # little vertical shift to avoid overlappings with objects surfaces
+        name = 'Step'+str(i-1) if i not in [0,1] else 'Start'+foot_id
+        foot_mesh = go.Mesh3d(name=name, x=x, y=y, z=z, color='cyan' if foot_id == 'Right' else 'red')
         fig.add_trace(foot_mesh, row=1, col=2)
         
-        
-    
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), showlegend=False)
+    visualization_range = [min(map.world_dimensions[0][0], map.world_dimensions[1][0], map.world_dimensions[2][0]), max(map.world_dimensions[0][1], map.world_dimensions[1][1], map.world_dimensions[2][1])+map.resolution]
+    nticks = int(visualization_range[1] - visualization_range[0])*2
+    fig.update_layout(scene = dict(xaxis = dict(nticks=nticks, range=visualization_range), yaxis = dict(nticks=nticks, range=visualization_range), zaxis = dict(nticks=nticks, range=visualization_range)))
+    fig.update_layout(scene2 = dict(xaxis = dict(nticks=nticks, range=visualization_range), yaxis = dict(nticks=nticks, range=visualization_range), zaxis = dict(nticks=nticks, range=visualization_range)))
     fig.show()
 
 
