@@ -148,12 +148,23 @@ def RRT(initial_Stance, goal, map, time_max):
 
     return retrieve_steps(rrt_tree.root, [(rrt_tree.root.f_sup, 'Left' if rrt_tree.root.f_swg_id == 'Right' else 'Right') ] )
 
+def retrieve_steps(node, steps=[]):
+    '''Start from a node of the tree. 
+    Returns all the steps to reach the node from the root of the tree
+    ## In the returned list there are also the footprints of the initial stance.'''
+    # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
+    steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right'))
+    if not node.parent: 
+        steps.insert(0, (node.f_swg, node.f_swg_id))
+        return steps
+    return retrieve_steps(node.parent, steps)
 
 
-def retrieve_steps(node, steps):
-    steps.append( (node.f_swg, node.f_swg_id) )
+def retrieve_all_steps(node, steps):
+    # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
+    steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right') )
     for child in node.children:
-        steps = retrieve_steps(child, steps)
+        steps = retrieve_all_steps(child, steps)
     return steps
 
 

@@ -57,7 +57,7 @@ def main(world_json, resolution, time_max):
         x = vertices[:,0]
         y = vertices[:,1]
         z = np.ones(4, dtype=np.float64)
-        z = z.dot(foot[2]+0.001) # little vertical shift to avoid overlappings with objects surfaces
+        z = z.dot(foot[2]+0.01) # little vertical shift to avoid overlappings with objects surfaces
         name = 'Step'+str(i-1) if i not in [0,1] else 'Start'+foot_id
         foot_mesh = go.Mesh3d(name=name, x=x, y=y, z=z, color='cyan' if foot_id == 'Right' else 'red')
         fig.add_trace(foot_mesh, row=1, col=2)
