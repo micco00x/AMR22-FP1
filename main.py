@@ -38,7 +38,7 @@ def main(world_json, resolution, time_max):
     initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
-    goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205], ] #FALSE GOAL REGION, IT NEVER ENDS
+    goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205]]
     print('goal region:', goal_region, 'Start', f)
 
     # Show goal regions
@@ -73,7 +73,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--world-json', type=Path, default='data/world_of_stairs.json', help='json file containing the information about the boxes contained in the world')
     parser.add_argument('--resolution', type=float, default=0.02, help='Set the map resolution')
-    parser.add_argument('--time-max', type=int, default=1000, help='Set the map resolution')
+    parser.add_argument('--time-max', type=int, default=3000, help='Set the map resolution')
     opt = parser.parse_args()
     return opt
 

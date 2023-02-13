@@ -89,44 +89,50 @@ def RRT(initial_Stance, goal, map, time_max):
         return rrt_tree
     
 
+    v_candidate = None
     for i in range(time_max):
         print('Iteration: ', i)
         """ Step 1) Selecting a vertex for expansion"""
         p_rand = [random.random()*abs(x_range[1]-x_range[0]) + x_range[0], random.random()*abs(y_range[1]-y_range[0]) + y_range[0]] # random point in (x,y)
-        #distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Fix this part. It modifies the root
-        v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
+        #cell_rand = map.query(p_rand[0], p_rand[1])
+        #if cell_rand == None:
+        #    continue
+        #p_rand[2] = random.choice(cell_rand)[0]
+        distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Fix this part. It modifies the root
+        #v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
+        #print('BEST_DISTANCE:',distance)
         
                
         """ Step 2) Generating a candidate vertex"""
         #Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
-        candidate_swg_f, candidate_sup_f, candidate_id = motion_Primitive_selector(v_near)
+        candidate_swg_f, candidate_sup_f, candidate_id = motion_Primitive_selector(v_near) #candidate_id è il piede di swing del nodo candiate
         candidate_sup_f[2] = assign_height( v_near.f_swg, candidate_sup_f, map)
         if candidate_sup_f[2] == None: continue
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
         # TODO Check this part
         r1_check = r1_feasibility(candidate_sup_f, map)
-        r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
+        r2_check = r2_feasibility(v_near.f_sup, candidate_sup_f, candidate_id)
         if r1_check == False:
-            print('r1_check fail')
+            #print('r1_check fail')
             continue # The current expansion attempt is aborted and a new iteration is started
         if r2_check == False:
-            print('r2:check fail')
+            #print('r2:check fail')
             continue
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
 
         """ Step 3) Choosing a parent"""
-        # TODO Check this part
+        #TODO Check this part
         # print('VABENE')
-        # neighbors = neighborhood(v_candidate, rrt_tree.root)
-        # candidate_parent = v_near
-        # candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
-        # for neigh in neighbors:
-        #     if r2_feasibility( neigh.f_swg, candidate_sup_f): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
-        #         if (cost_of_a_new_vertex(v_candidate, neigh))  < candidate_cost:
-        #             candidate_parent = neigh
-        #             candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+        neighbors = neighborhood(v_candidate, rrt_tree.root)
+        candidate_parent = v_near
+        candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        for neigh in neighbors:
+            if r2_feasibility( neigh.f_swg, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
+                if (cost_of_a_new_vertex(v_candidate, neigh))  < candidate_cost:
+                    candidate_parent = neigh
+                    candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
         
         #now let's add the node to the tree, POI QUESTO PASSAGGIO VA FATTO DOPO IL PUNTO 4, ORA È UN TEST
         # if not v_candidate.parent.parent:
@@ -206,12 +212,25 @@ def v_near_Generation(node, p_rand):
     return best_distance, v_near 
 
 
+
 def vertex_to_Point_Distance(vertex, point, k = 3):
     
-    mid_point = np.array([abs((vertex.f_swg[0] + vertex.f_sup[0])/2), abs((vertex.f_swg[1] + vertex.f_sup[1])/2)])
-    Saggital_axis = np.array((vertex.f_swg[3] + vertex.f_sup[3]) / 2) # Saggital axis expressed as an angle with respect the Xo axis of the originpytoh
-    joining_vector =np.array([abs(mid_point[0] - point[0]), abs(mid_point[1] - point[1])])
+    # mid_point = np.array([(vertex.f_swg[0] + vertex.f_sup[0])/2, (vertex.f_swg[1] + vertex.f_sup[1])/2])
+    # Saggital_axis = np.array((vertex.f_swg[3] + vertex.f_sup[3]) / 2) # Saggital axis expressed as an angle with respect the Xo axis of the originpytoh
+    # joining_vector =np.array([abs(mid_point[0] - point[0]), abs(mid_point[1] - point[1])])
+    # phi = np.arctan2(joining_vector[1], joining_vector[0])
+    # dist = norm((mid_point - point)) + k*abs(Saggital_axis - phi)
+    
+    # return dist # Result is in FOOT COORDS
+    
+    mid_point = np.array([(vertex.f_swg[0] + vertex.f_sup[0])/2, (vertex.f_swg[1] + vertex.f_sup[1])/2])
+    Saggital_axis = np.array((vertex.f_swg[3] + vertex.f_sup[3]) / 2)
+    #print('Saggital Axis:',Saggital_axis) # Saggital axis expressed as an angle with respect the Xo axis of the originpytoh
+    joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1])])
+    #h_mid = (vertex.f_swg[2] + vertex.f_sup[2])/2
+    #point_xy = [point[0],point[1]]
     phi = np.arctan2(joining_vector[1], joining_vector[0])
+    #print('Phi:', phi)
     dist = norm((mid_point - point)) + k*abs(Saggital_axis - phi)
     
     return dist # Result is in FOOT COORDS
@@ -271,7 +290,7 @@ def motion_Primitive_selector(node):
 
     p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
     p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
-    p_th = [-(pi/6), 0, +(pi/6)]
+    p_th = [-(pi/4),-(pi/6), 0, +(pi/6), +(pi/4)]
     
     rot = get_z_rotation_matrix(saggital_axis)
     delta = [ random.choice(p_x), y_direction*random.choice(p_y), 0, random.choice(p_th)]
@@ -310,7 +329,7 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     """
     This verifies that the footstep f is fully in contact within a single horizontal patch.
     To guarantee this, each cell of the map belonging to or overlapping with the footprint
-    must have the same height Z. The foorprint is 12x7 units , but let's use 13x9 to overcome
+    must have the same height Z. The foorprint is 24x14 cm , but let's use 13x9 to overcome
     small errors in postion
     """
 
@@ -333,50 +352,82 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     return  True
 
 
-def r2_feasibility( f_prev, f_actual):
+def r2_feasibility( f_prev, f_actual, candiate_swg_id): #f_actual è il piede di support del nuovo nodo, f_prev è il piede di support del vecchio nodo, 
     """
     This verifies that the footstep f is kinematically admissibile from the previous footstep f_prev
     The constraints on the 4 dimensions of a footstep( R3 x SO(2)) are chosen by construction, based on 
     dimensions of the robot and the environment. Deltas are the maximum increments acceptable.
     """
-    delta_x_neg = 0.45
-    delta_x_pos = 0.45
-    delta_y_neg = 0.30
-    delta_y_pos = 0.30
-    delta_z_neg = 0.5
-    delta_z_pos = 0.5
-    delta_theta_neg = pi/3
-    delta_theta_pos =pi/3
-    l = 0.1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
+    delta_x_neg = 0.30
+    delta_x_pos = 0.40
+    delta_y_neg = 0.5
+    delta_y_pos = 0.5
+    delta_z_neg = 0.25
+    delta_z_pos = 0.25
+    delta_theta_neg = pi/4
+    delta_theta_pos =pi/4
+    l = 0.25 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
 
-    rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
-    #rotation_matrix = get_z_rotation_matrix(f_prev[3])
-    vars= np.array([f_actual[0] - f_prev[0], f_actual[1] - f_prev[1]], dtype=np.float64) # 2x1 matrix with x and y values
-    xy_pos = np.matmul(rotation_matrix, vars) + np.array([[0], [+l]]) # positive l
-    #xy_pos = rotation_matrix.dot(vars)
-    # xy_pos += np.array([[0], [+l]]) # positive l
+    theta_rot = f_prev[3] # ANGOLO DI ROTAZIONE , PARI ALL'ANGOLO DEL PIEDE DI PARTENZA
+    rot_matrix = get_z_rotation_matrix(theta_rot)
+    rot_matrix = rot_matrix.transpose()
+    xy_vector = np.array([[f_actual[0] - f_prev[0]], [f_actual[1] - f_prev[1]], [0]])
+    #print("rotation_matrix: ", rot_matrix)
+    #print("prova1: ", xy_vector)
+    #xy_pos = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
+    #    xy_neg = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
+    
+    if candiate_swg_id == 'Right':
+        xy = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
+    else:
+        xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
 
-    #print('xy_pos type:',type(xy_pos), xy_pos[0], xy_pos[1])
-    xy_neg = np.matmul(rotation_matrix, vars) + np.array([[0], [-l]]) #negative l
-    #print('f type', type(f[2]), '     ', 'f_prev type:', type(f_prev[2]) )
+
     z = f_actual[2] - f_prev[2]
     theta = f_actual[3] - f_prev[3]
-    #print(type(xy_pos[1]), xy_pos[1])
 
-    if ((xy_pos[0] < - delta_x_neg) or (xy_pos[0] > delta_x_pos)): # For x the posutive case is enough since it has 0 in the summed vector
-        #print('X fail, difference is',xy_pos[0]  )
+    #print("xy: ", xy)
+
+
+    if ((xy[0] < -delta_x_neg) or (xy[0] > delta_x_pos)):
+        #print('X fail, difference is',xy[0])
         return False
-    if ((xy_pos[1] < (-1*delta_y_neg)) or (xy_pos[1] > delta_y_pos)):
-        #print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
+    if ((xy[1] < -delta_y_neg) or (xy[1] > delta_y_pos)):
+        #print("Y_ERROR pos: ", xy[1])
         return False
-    if ((xy_neg[1] < (-1*delta_y_neg)) or (xy_neg[1] > delta_y_pos)):
-        #print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
+    if ((z < -delta_z_neg) or (z > delta_z_pos)):
+        #print("z_ERROR: ", z)
         return False
-    if ((z < (-1*delta_z_neg)) or (z > delta_z_pos)):
-       # print('Z fail')
+    if ((theta < -delta_theta_neg) or (theta > delta_theta_pos )):
+        #print("THETA_ERROR: ", theta)
         return False
-    if ((theta < (-1*delta_theta_neg)) or (theta > delta_theta_pos)):
-        #print('Theta fail')
-        return False
-    else:
-        return True
+    return True
+
+
+
+
+
+
+
+
+
+
+
+
+    # if ((xy_pos[0] < - delta_x_neg) or (xy_pos[0] > delta_x_pos)): # For x the posutive case is enough since it has 0 in the summed vector
+    #     #print('X fail, difference is',xy_pos[0]  )
+    #     return False
+    # if ((xy_pos[1] < (-1*delta_y_neg)) or (xy_pos[1] > delta_y_pos)):
+    #     #print('Y fail_PLUS, difference is', xy_pos[1],  'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos )
+    #     return False
+    # if ((xy_neg[1] < (-1*delta_y_neg)) or (xy_neg[1] > delta_y_pos)):
+    #     #print('Y fail_NEG, difference is', xy_pos[1] , 'delta_y_neg', delta_y_neg, 'delta_y_pos', delta_y_pos)
+    #     return False
+    # if ((z < (-1*delta_z_neg)) or (z > delta_z_pos)):
+    #    # print('Z fail')
+    #     return False
+    # if ((theta < (-1*delta_theta_neg)) or (theta > delta_theta_pos)):
+    #     #print('Theta fail')
+    #     return False
+    # else:
+    #     return True
