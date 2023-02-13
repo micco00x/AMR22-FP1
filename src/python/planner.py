@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.random import randint
+from numpy import random
 import matplotlib.pyplot as plt
 from numpy.linalg import norm
 from numpy import transpose,  cos ,sin
@@ -81,7 +81,7 @@ def RRT(initial_Stance, goal, map, time_max):
     Map = multilevel surface map in 3D (x,y,z)
     """
     rrt_tree = Tree(initial_Stance[0], initial_Stance[1])
-    x_range, y_range = map.discrete_size
+    x_range, y_range, z_range = map.world_dimensions
     lista_nodi = [rrt_tree.root]
     # #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
     if goal_Check(rrt_tree.root, goal, map) is True:
@@ -92,9 +92,9 @@ def RRT(initial_Stance, goal, map, time_max):
     for i in range(time_max):
         print('Iteration: ', i)
         """ Step 1) Selecting a vertex for expansion"""
-        p_rand = [randint(0, x_range), randint(0,y_range)] # random point in (x,y)
-        distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Fix this part. It modifies the root
-        # v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
+        p_rand = [random.random()*abs(x_range[1]-x_range[0]) + x_range[0], random.random()*abs(y_range[1]-y_range[0]) + y_range[0]] # random point in (x,y)
+        #distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Fix this part. It modifies the root
+        v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
         
                
         """ Step 2) Generating a candidate vertex"""
@@ -105,14 +105,14 @@ def RRT(initial_Stance, goal, map, time_max):
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
         # TODO Check this part
-        # r1_check = r1_feasibility(candidate_sup_f, map)
-        # r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
-        # if r1_check == False:
-        #    print('r1_check fail')
-        #    continue # The current expansion attempt is aborted and a new iteration is started
-        # if r2_check == False:
-        #     print('r2:check fail')
-        #     continue
+        r1_check = r1_feasibility(candidate_sup_f, map)
+        r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
+        if r1_check == False:
+            print('r1_check fail')
+            continue # The current expansion attempt is aborted and a new iteration is started
+        if r2_check == False:
+            print('r2:check fail')
+            continue
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
 
@@ -150,8 +150,8 @@ def RRT(initial_Stance, goal, map, time_max):
         #     return # TODO PATH la lista di passi da fare fino al goal
 
     nodo_goal = lista_nodi[-1]
-    # return retrieve_all_steps(rrt_tree.root, [ (rrt_tree.root.f_swg, rrt_tree.root.f_swg_id)] ) # Uncomment thi line to visualize all the nodes of the tree
-    return retrieve_steps(nodo_goal)
+    return retrieve_all_steps(rrt_tree.root) # Uncomment thi line to visualize all the nodes of the tree
+    # return retrieve_steps(nodo_goal)
 
 
 def retrieve_steps(node):
@@ -165,11 +165,15 @@ def retrieve_steps(node):
     return steps
 
 
-def retrieve_all_steps(node, steps):
+def retrieve_all_steps(node):
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
-    steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right') )
-    for child in node.children:
-        steps = retrieve_all_steps(child, steps)
+    steps = [(node.f_swg, node.f_swg_id)]
+    queue = [node]
+    while len(queue): # finchè la coda non è vuota
+        node = queue.pop()
+        steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right') )
+        for child in node.children:
+            queue.append(child)
     return steps
 
 
@@ -269,7 +273,7 @@ def motion_Primitive_selector(node):
     p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
     p_th = [-(pi/6), 0, +(pi/6)]
     
-    rot = get_z_rotation_matrix(-saggital_axis)
+    rot = get_z_rotation_matrix(saggital_axis)
     delta = [ random.choice(p_x), y_direction*random.choice(p_y), 0, random.choice(p_th)]
     delta[:-1] = rot.dot(delta[:-1])
     new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
@@ -313,7 +317,7 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     x = f[0]
     y = f[1]
     orientation = f[3]
-    size = [0.14, 0.26] #Foot size of the robot
+    size = [0.26, 0.15] #Foot size of the robot
     vertices = get_2d_rectangle_coordinates([x,y], size, orientation)
     #print('Vetices: ', vertices)
 
@@ -345,11 +349,11 @@ def r2_feasibility( f_prev, f_actual):
     delta_theta_pos =pi/3
     l = 0.1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
 
-    # rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
-    rotation_matrix = get_z_rotation_matrix(f_prev[3])
-    vars= np.array([f_actual[0] - f_prev[0], f_actual[1] - f_prev[1], 0], dtype=np.float64) # 2x1 matrix with x and y values
-    # xy_pos = np.matmul(rotation_matrix, vars) + np.array([[0], [+l]]) # positive l
-    xy_pos = rotation_matrix.dot(vars)
+    rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
+    #rotation_matrix = get_z_rotation_matrix(f_prev[3])
+    vars= np.array([f_actual[0] - f_prev[0], f_actual[1] - f_prev[1]], dtype=np.float64) # 2x1 matrix with x and y values
+    xy_pos = np.matmul(rotation_matrix, vars) + np.array([[0], [+l]]) # positive l
+    #xy_pos = rotation_matrix.dot(vars)
     # xy_pos += np.array([[0], [+l]]) # positive l
 
     #print('xy_pos type:',type(xy_pos), xy_pos[0], xy_pos[1])
