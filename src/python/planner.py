@@ -243,7 +243,7 @@ def motion_Primitive_selector(node):
     Set of primitives U: 20 possible swing foot landing w.r.t the actual support foot
     For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
     The 2 possible angles are: the saggital_axis angle and (the sggital_axis + 30°)
-    The 2 possible side distances are: -12 units and -24 units from f_sup along y axis of f_sup, if f_swg is 'Right'
+    The 2 possible side distances are: -12 cm and -24 cm from f_sup along y axis of f_sup, if f_swg is 'Right'
                                       12 cm and 24 cm  if f_swg is 'Left
     The 5 possible forward distances are: -10,0,10,20,30 cm along x axis of f_sup
     U_l = primitives for f_swg_id = 'Left'
@@ -254,44 +254,27 @@ def motion_Primitive_selector(node):
     swing = node.f_swg
     support = node.f_sup
     saggital_axis = (swing[3] + support[3]) / 2 
-    s = saggital_axis
-    rot = get_z_rotation_matrix(saggital_axis)
-    swing[:-1] = rot.dot(swing[:-1])
-    support[:-1] = rot.dot(support[:-1])
     
     x_sup, y_sup, z_sup, theta_sup = support
-
-    # x = 1 if node.f_swg_id == 'Left' else -1
-
+    x_swg, y_swg, z_swg, theta_swg = swing
+    y_direction = 1 if node.f_swg_id == 'Left' else -1
     new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
 
     p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
     p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
     p_th = [-(pi/6), 0, +(pi/6)]
-
-    new_support_foot = [ x_sup + random.choice(p_x), y_sup + random.choice(p_y), 0, theta_sup + random.choice(p_th)]
-
-
-    inverse_rot = np.linalg.inv(rot)
-    new_support_foot[:-1] = inverse_rot.dot(new_support_foot[:-1])
+    
+    rot = get_z_rotation_matrix(-saggital_axis)
+    delta = [ random.choice(p_x), y_direction*random.choice(p_y), 0, random.choice(p_th)]
+    delta[:-1] = rot.dot(delta[:-1])
+    new_support_foot = [ x_swg + delta[0], y_swg + delta[1], 0, theta_swg + delta[3]]
+    
     for i in range(0, 4):
         new_support_foot[i] = round(new_support_foot[i], 5)
-    
-
-    # if node.f_swg_id == 'Left':
-    #     new_support_foot = random.choice(U_l)
-    #     new_id = 'Right'
-    #     #print('new_support_foot:', type(new_support_foot), '  ',new_support_foot)
-
-    # if node.f_swg_id == 'Right':
-    #     new_support_foot = random.choice(U_r )
-    #     new_id = 'Left'
-    #     #print('new_support_foot:', type(new_support_foot),'  ',new_support_foot)
-
 
     new_swing_foot = node.f_sup
     
-    return new_swing_foot, new_support_foot, new_id #Result is in FOOT COORDS
+    return new_swing_foot, new_support_foot, new_id
 
     
 
