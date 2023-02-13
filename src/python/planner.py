@@ -94,9 +94,9 @@ def RRT(initial_Stance, goal, map, time_max):
         print('Iteration: ', i)
         """ Step 1) Selecting a vertex for expansion"""
         p_rand = [random.random()*abs(x_range[1]-x_range[0]) + x_range[0], random.random()*abs(y_range[1]-y_range[0]) + y_range[0]] # random point in (x,y)
-        #cell_rand = map.query(p_rand[0], p_rand[1])
-        #if cell_rand == None:
-        #    continue
+        cell_rand = map.query(p_rand[0], p_rand[1])
+        if cell_rand == None:
+            continue
         #p_rand[2] = random.choice(cell_rand)[0]
         distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Fix this part. It modifies the root
         #v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
