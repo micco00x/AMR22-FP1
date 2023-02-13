@@ -308,7 +308,7 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     x = f[0]
     y = f[1]
     orientation = f[3]
-    size = [0.26, 0.14] #Foot size of the robot
+    size = [0.14, 0.26] #Foot size of the robot
     vertices = get_2d_rectangle_coordinates([x,y], size, orientation)
     #print('Vetices: ', vertices)
 
