@@ -93,7 +93,7 @@ def RRT(initial_Stance, goal, map, time_max):
         print('Iteration: ', i)
         """ Step 1) Selecting a vertex for expansion"""
         p_rand = [randint(0, x_range), randint(0,y_range)] # random point in (x,y)
-        distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Check this part
+        distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Fix this part. It modifies the root
         # v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
         
                
@@ -154,16 +154,15 @@ def RRT(initial_Stance, goal, map, time_max):
     return retrieve_steps(nodo_goal)
 
 
-def retrieve_steps(node, steps=[]):
-    '''Start from a node of the tree. 
-    Returns all the steps to reach the node from the root of the tree
-    ## In the returned list there are also the footprints of the initial stance.'''
+def retrieve_steps(node):
+    '''Start from a node of the tree. Returns all the steps to reach the node from the root of the tree ## In the returned list there are also the footprints of the initial stance.'''
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
-    steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right'))
-    if not node.parent: 
-        steps.insert(0, (node.f_swg, node.f_swg_id))
-        return steps
-    return retrieve_steps(node.parent, steps)
+    steps=[]
+    while(node.parent):
+        steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right'))
+        node = node.parent
+    steps.insert(0, (node.f_swg, node.f_swg_id))
+    return steps
 
 
 def retrieve_all_steps(node, steps):
