@@ -338,17 +338,21 @@ def r2_feasibility( f_prev, f_actual):
     """
     delta_x_neg = 0.45
     delta_x_pos = 0.45
-    delta_y_neg = 100.30
-    delta_y_pos = 100.30
-    delta_z_neg = 0.25
-    delta_z_pos = 0.25
-    delta_theta_neg = 3
-    delta_theta_pos = 3
+    delta_y_neg = 0.30
+    delta_y_pos = 0.30
+    delta_z_neg = 0.5
+    delta_z_pos = 0.5
+    delta_theta_neg = pi/3
+    delta_theta_pos =pi/3
     l = 0.1 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
 
-    rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
-    vars= np.array([[f_actual[0] - f_prev[0]], [f_actual[1] - f_prev[1]]]) # 2x1 matrix with x and y values
-    xy_pos = np.matmul(rotation_matrix, vars) + np.array([[0], [+l]]) # positive l
+    # rotation_matrix = np.array(([cos(f_prev[3]),-sin(f_prev[3])], [sin(f_prev[3]), cos(f_prev[3])]))
+    rotation_matrix = get_z_rotation_matrix(f_prev[3])
+    vars= np.array([f_actual[0] - f_prev[0], f_actual[1] - f_prev[1], 0], dtype=np.float64) # 2x1 matrix with x and y values
+    # xy_pos = np.matmul(rotation_matrix, vars) + np.array([[0], [+l]]) # positive l
+    xy_pos = rotation_matrix.dot(vars)
+    # xy_pos += np.array([[0], [+l]]) # positive l
+
     #print('xy_pos type:',type(xy_pos), xy_pos[0], xy_pos[1])
     xy_neg = np.matmul(rotation_matrix, vars) + np.array([[0], [-l]]) #negative l
     #print('f type', type(f[2]), '     ', 'f_prev type:', type(f_prev[2]) )
