@@ -82,6 +82,7 @@ def RRT(initial_Stance, goal, map, time_max):
     """
     rrt_tree = Tree(initial_Stance[0], initial_Stance[1])
     x_range, y_range = map.discrete_size
+    lista_nodi = [rrt_tree.root]
     # #AGGIUNGERE CHECK SU initial_Stance PER VERIFICARE CHE SIA NEI LIMITI DELLA MAPPA
     if goal_Check(rrt_tree.root, goal, map) is True:
         print('PATH FOUND')
@@ -92,61 +93,66 @@ def RRT(initial_Stance, goal, map, time_max):
         print('Iteration: ', i)
         """ Step 1) Selecting a vertex for expansion"""
         p_rand = [randint(0, x_range), randint(0,y_range)] # random point in (x,y)
-        distance, v_near = v_near_Generation(rrt_tree.root, p_rand)
-
-        # print(v_near.f_sup)
-        # print(v_near.f_swg)
-        # print(v_near.f_swg_id)
+        distance, v_near = v_near_Generation(rrt_tree.root, p_rand) # TODO Check this part
+        # v_near = rrt_tree.root if i==0 or not v_candidate else v_candidate
         
+               
         """ Step 2) Generating a candidate vertex"""
         #Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
         candidate_swg_f, candidate_sup_f, candidate_id = motion_Primitive_selector(v_near)
-        #print('candidate_sup-fot type:', type(candidate_sup_f), candidate_sup_f)
         candidate_sup_f[2] = assign_height( v_near.f_swg, candidate_sup_f, map)
-        if candidate_sup_f[2] == None:
-            continue
-        print(candidate_sup_f[2])
+        if candidate_sup_f[2] == None: continue
         #Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
-        r1_check = r1_feasibility(candidate_sup_f, map)
-        r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
-        if r1_check == False:
-           print('r1_check fail')
-           continue # The current expansion attempt is aborted and a new iteration is started
-        if r2_check == False:
-            print('r2:check fail')
-            continue
+        # TODO Check this part
+        # r1_check = r1_feasibility(candidate_sup_f, map)
+        # r2_check = r2_feasibility(v_near.f_swg, candidate_sup_f)
+        # if r1_check == False:
+        #    print('r1_check fail')
+        #    continue # The current expansion attempt is aborted and a new iteration is started
+        # if r2_check == False:
+        #     print('r2:check fail')
+        #     continue
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
+
         """ Step 3) Choosing a parent"""
-        print('VABENE')
-        neighbors = neighborhood(v_candidate, rrt_tree.root)
-        candidate_parent = v_near
-        candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
-        for neigh in neighbors:
-            if r2_feasibility( neigh.f_swg, candidate_sup_f): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
-                if (cost_of_a_new_vertex(v_candidate, neigh))  < candidate_cost:
-                    candidate_parent = neigh
-                    candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+        # TODO Check this part
+        # print('VABENE')
+        # neighbors = neighborhood(v_candidate, rrt_tree.root)
+        # candidate_parent = v_near
+        # candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        # for neigh in neighbors:
+        #     if r2_feasibility( neigh.f_swg, candidate_sup_f): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
+        #         if (cost_of_a_new_vertex(v_candidate, neigh))  < candidate_cost:
+        #             candidate_parent = neigh
+        #             candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+        
         #now let's add the node to the tree, POI QUESTO PASSAGGIO VA FATTO DOPO IL PUNTO 4, ORA È UN TEST
-        v_candidate.parent = candidate_parent
-        v_candidate.cost = candidate_parent.cost + 1 #candidate_cost
-        v_candidate.f_swg_id = candidate_id
-        candidate_parent.children.append(v_candidate)
-        print( 'NEW FOOTSTEP',map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[3])
-        print('FOOTSTEP ID:', v_candidate.f_swg_id )
+        # if not v_candidate.parent.parent:
+        if v_candidate not in v_near.children:
+            lista_nodi.append(v_candidate)
+            v_candidate.parent = v_near
+            v_candidate.cost = v_near.cost + 1 #candidate_cost
+            v_candidate.f_swg_id = candidate_id
+            v_near.children.append(v_candidate)
+        # print( 'NEW FOOTSTEP',map.world2map_coordinates(v_candidate.f_sup[0], v_candidate.f_sup[1]), v_candidate.f_sup[2])
+        # print('FOOTSTEP ID:', v_candidate.f_swg_id )
 
 
-        if goal_Check(v_candidate, goal, map) is True:
+        if goal_Check(v_candidate, goal, map):
             print('PATH FOUND')
-            return rrt_tree
+            break
                       
 
     print('ok')
         # if goal_Check(f_sup, goal, mlsm):
-        #     return # TODO PATH la lista di passi da fare
+        #     return # TODO PATH la lista di passi da fare fino al goal
 
-    return retrieve_steps(rrt_tree.root, [(rrt_tree.root.f_sup, 'Left' if rrt_tree.root.f_swg_id == 'Right' else 'Right') ] )
+    nodo_goal = lista_nodi[-1]
+    # return retrieve_all_steps(rrt_tree.root, [ (rrt_tree.root.f_swg, rrt_tree.root.f_swg_id)] ) # Uncomment thi line to visualize all the nodes of the tree
+    return retrieve_steps(nodo_goal)
+
 
 def retrieve_steps(node, steps=[]):
     '''Start from a node of the tree. 
@@ -255,7 +261,7 @@ def motion_Primitive_selector(node):
     support = node.f_sup
     saggital_axis = (swing[3] + support[3]) / 2 
     
-    x_sup, y_sup, z_sup, theta_sup = support
+    # x_sup, y_sup, z_sup, theta_sup = support
     x_swg, y_swg, z_swg, theta_swg = swing
     y_direction = 1 if node.f_swg_id == 'Left' else -1
     new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
@@ -267,7 +273,7 @@ def motion_Primitive_selector(node):
     rot = get_z_rotation_matrix(-saggital_axis)
     delta = [ random.choice(p_x), y_direction*random.choice(p_y), 0, random.choice(p_th)]
     delta[:-1] = rot.dot(delta[:-1])
-    new_support_foot = [ x_swg + delta[0], y_swg + delta[1], 0, theta_swg + delta[3]]
+    new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
     
     for i in range(0, 4):
         new_support_foot[i] = round(new_support_foot[i], 5)
