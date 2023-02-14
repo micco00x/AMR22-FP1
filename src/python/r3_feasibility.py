@@ -118,7 +118,7 @@ def generate_trajectory(f_prev, f_current, map):
         #x dell'equazione della parabola è la proiezione sin cos di x e y (da capire bene come farla, in base a cosa scelgo sin e cos)
 
         #da correggere anche sopra!!
-
+        collision = False
         interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
         theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
         rotation_matrix = get_z_rotation_matrix_2d(theta)
@@ -135,9 +135,12 @@ def generate_trajectory(f_prev, f_current, map):
             foot_size = [0.26, 0.15]
             for vertex in get_2d_rectangle_coordinates([x,y], foot_size, f_prev[3]):
                 if (not (map.check_collision(vertex[0], vertex[1], z))):
-                    print(trajectory_params)
-                    return -1
-    return trajectory_params #doesn't exist any feasible trajectory
+                    collision = True
+                    break
+            if collision: break
+        if collision: continue
+        return trajectory_params #doesn't exist any feasible trajectory
+    return -1
 
 
 

@@ -37,8 +37,8 @@ def main(world_json, resolution, time_max):
     #RRT: CAMBIO I PIEDI INIZIALI E LI METTO VICINO A DELLE SCALE PER VEDERE SE CAMBIA L' ALTEZZA IN DEI NODI SUCCESSIVI
     # f_swg = [1.85, 2, 0.00020, np.pi/2] 
     # f_sup = [1.65, 2, 0.00020, np.pi/2]
-    f_swg = [-2.6, 0.4, 0.00020, np.pi/2] 
-    f_sup = [-2.8, 0.4, 0.00020, np.pi/2]
+    f_swg = [-2.6, 1.8, 0.00020, np.pi/2] 
+    f_sup = [-2.8, 1.8, 0.00020, np.pi/2]
     initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
