@@ -8,12 +8,11 @@ from numpy import transpose,  cos ,sin
 import random
 import math
 import sympy
-
 from src.python.utils import get_z_rotation_matrix_2d, get_2d_rectangle_coordinates
 
 
 #retunr True exists a feasible trajectory, otherwise return False
-def r3_feasibility(f_prev, f_actual, map):
+def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual_sup
     """
     This verifies that the footstep from j-2 to j is collision free.
     To do so, we have to check that:
@@ -151,34 +150,38 @@ def generate_trajectory(f_prev, f_current, map):
 
 
 
-'''def rewiring(v_new, tree):
-    h_min = 0.05 #minimum height for the step (iperparametro da definire) [5 cm = ?]
-    h_max = 0.30 #maximum height for the step (iperparametro da definire) [30 cm = ?]
-
+def rewiring(v_new, tree): #v_new è il nodo appena aggiunto8 CHE NOI CHIAMIAMO v_candidate
     neighbors = neighborhood(v_new, tree) #define neighbors
     for neighbor in neighbors:
         if neighbor == v_new.parent: #if parents skip
             continue
 
-        if (r2_feasibility(neighbor, v_new) and (r3_feasibility(v_new.f_swg, neighbor.f_sup ))): #check r1, r2, r3
-            if (v_new. cost + edge_cost(v_new, neighbor)) < neighbor.cost: #check if cost is less   ##############cost on tree (on each node)#########################
+        if (r2_feasibility(v_new.f_sup, neighbor.f_sup) and (r3_feasibility(v_new.f_swg, neighbor.f_sup ))): #check r2, r3
+            if (cost_of_a_new_vertex(neighbor, v_new)) < neighbor.cost: #check if cost is less
                 neighbor.parent.children.remove(neighbor)
                 neighbor.f_swg = v_new.f_sup    #change f_swg of the new child
                 v_new.children.append(neighbor)   #set new child of v_new
                 neighbor.parent = v_new
+                if v_new.f_swg_id == 'Right':
+                    neighbor.f_swg_id = 'Left'
+                else:
+                    neighbor.f_swg_id = 'Right'
 
                 t_new = generate_trajectory(v_new.f_swg, neighbor.f_sup) #calcolate new trajectory
-                neighbor.trajectory = t_new
+
+                return tree
+                #neighbor.trajectory = t_new
                 #set new trajectory on tree
 
-                new_neighbors = neighborhood(neighbor, tree)
+                '''new_neighbors = neighborhood(neighbor, tree)
                 for j in new_neighbors:
                     t_new = generate_trajectory(neighbor.f_swg, j.f_sup) #calcolate new trajectory
-                    #set new trajectory on tree
+                    #set new trajectory on tree'''
 
 
 
-def edge_cost(v_a, v_b):
+
+'''def edge_cost(v_a, v_b):
     c1 = 1  #cost1
 
     c2 = abs(v_b.f_sup - v_a.f_swg) #cost2
