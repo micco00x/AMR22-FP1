@@ -6,6 +6,7 @@ from numpy import transpose,  cos ,sin
 import random
 from src.python.multi_level_surface_map import MultiLevelSurfaceMap
 from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix
+from src.python.r3_feasibility import r3_feasibility
 
 """
 Stance = (f_swing, f_support)
@@ -112,13 +113,18 @@ def RRT(initial_Stance, goal, map, time_max):
 
         # TODO Check this part
         r1_check = r1_feasibility(candidate_sup_f, map)
-        r2_check = r2_feasibility(v_near.f_sup, candidate_sup_f, candidate_id)
         if r1_check == False:
             #print('r1_check fail')
             continue # The current expansion attempt is aborted and a new iteration is started
+        r2_check = r2_feasibility(v_near.f_sup, candidate_sup_f, candidate_id)
         if r2_check == False:
             #print('r2:check fail')
             continue
+        r3_check = r3_feasibility(v_near.f_swg, candidate_sup_f, map)
+        if r3_check == False:
+            print('r3:check fail')
+            continue
+        
         v_candidate = Node(candidate_swg_f, candidate_sup_f)
 
 
@@ -287,6 +293,7 @@ def motion_Primitive_selector(node):
     x_swg, y_swg, z_swg, theta_swg = swing
     y_direction = 1 if node.f_swg_id == 'Left' else -1
     new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
+
 
     p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
     p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
