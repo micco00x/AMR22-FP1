@@ -514,7 +514,8 @@ def generate_trajectory(f_prev, f_current, map):
         #and starting height is 0, and arriving height is f[2]-f_prev[2]
 
         #set equations equals to 0
-        eq1 = sympy.Eq((-4*a)*h_max_set - b * b, 0) # -4a*h + 4ac - b^2 = 0
+        #eq1 = sympy.Eq((-4*a)*h_max_set - b * b, 0) # -4a*h + 4ac - b^2 = 0
+        eq1 = sympy.Eq(a* (distance/2)**2 + b * (distance/2) - h_max_set, 0)
         #eq2 = sympy.Eq(c, 0) #because seet start of parabola in the origin
         eq3 = sympy.Eq((a * distance * distance) + (b * distance) - (f_current[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
         # eq1 = sympy.Eq((-4*a)*h_max_set + (4*a*c) - b * b, 0) # -4a*h + 4ac - b^2 = 0
@@ -525,25 +526,27 @@ def generate_trajectory(f_prev, f_current, map):
         res = sympy.solve([eq1, eq3])
 
         #choose the positive values (parameters)
-        a_par = 0
-        b_par = 0
+        #a_par = 0
+        #b_par = 0
 
-        for i in res:
+        a_par = res[a]
+        b_par = res[b]
+
+
+        '''for i in res:
             if i[a] < a_par:
                 a_par = i[a]
-                b_par = i[b]
+                b_par = i[b]'''
         
         trajectory_params = [a_par, b_par]
 
 
-        #GENERATE 5 RANDOM POINTS
-        #generate 5 "random" points of the parabola and return them
+        #print("A: ", a_par, " and B: ", b_par)
 
         #idea:
         #y dell'equazione della parabola è z
         #x dell'equazione della parabola è la proiezione sin cos di x e y (da capire bene come farla, in base a cosa scelgo sin e cos)
 
-        #da correggere anche sopra!!
         collision = False
         interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
         theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
