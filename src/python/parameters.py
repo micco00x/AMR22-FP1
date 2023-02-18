@@ -1,0 +1,2 @@
+ 
+ROBOT_FOOT_SIZE = (0.24, 0.14)
