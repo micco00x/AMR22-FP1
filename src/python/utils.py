@@ -52,6 +52,20 @@ def get_z_rotation_matrix_2d(alpha):
     return rot_matrix_z
 
 
+def get_2d_circle_coordinates(position, radius, nr_of_vertices=14):
+    '''Given the position, the size and the orientation of a rectangle, this function will return the list of its vertices.'''
+    steps = np.linspace(0, 2*np.pi, nr_of_vertices, endpoint= False)
+    vertices = [ [cos(alpha), sin(alpha)] for alpha in steps ]
+    vertices = np.array(vertices).astype(float)
+
+    # Scaling based on the size
+    vertices *= radius
+
+    # Translation based on the 'reference vertex'
+    vertices += np.array(position)
+    return vertices
+
+
 def get_2d_rectangle_coordinates(position, size, orientation):
     '''Given the position, the size and the orientation of a rectangle, this function will return the list of its vertices.'''
     vertices = [[0, 1], [0, 0], [1, 0], [1, 1]]
