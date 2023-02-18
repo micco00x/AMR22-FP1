@@ -37,12 +37,15 @@ def main(world_json, resolution, time_max):
     #RRT: CAMBIO I PIEDI INIZIALI E LI METTO VICINO A DELLE SCALE PER VEDERE SE CAMBIA L' ALTEZZA IN DEI NODI SUCCESSIVI
     # f_swg = [1.85, 2, 0.00020, np.pi/2] 
     # f_sup = [1.65, 2, 0.00020, np.pi/2]
-    f_swg = [-2.8, 0.9, 0.000205, np.pi/2] 
-    f_sup = [-2.6, 0.9, 0.000205, np.pi/2]
+    #f_swg = [-2.8, 0.9, 0.000205, np.pi/2] 
+    #f_sup = [-2.6, 0.9, 0.000205, np.pi/2]
+    f_swg = [3.3, -0.2, 0.000205, -np.pi/2] #tunnel map
+    f_sup = [3.3, 0, 0.000205, -np.pi/2]    #tunnel map
     initial_stance = (f_swg, f_sup)
     g = map.world2map_coordinates(1.85, 1.5)
     f = map.world2map_coordinates(0.45, -2.3)
-    goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205]]
+    #goal_region = [ [g[0], g[1], 0.00205], [41, -31, 0.00205],[60, -141, 0.00205],[60, -141, 0.00205],[45, -70, 0.00205]]
+    goal_region = [[-3.1, -0.5, 0.00205], [-4, -0.5, 0.00205],[-3.1, 0.4, 0.00205],[-4, 0.4, 0.00205]]  #tunnel map
     print('goal region:', goal_region, 'Start', f)
 
     # Show goal regions
@@ -75,9 +78,9 @@ def main(world_json, resolution, time_max):
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--world-json', type=Path, default='data/easy.json', help='json file containing the information about the boxes contained in the world')
+    parser.add_argument('--world-json', type=Path, default='data/tunnel.json', help='json file containing the information about the boxes contained in the world')
     parser.add_argument('--resolution', type=float, default=0.02, help='Set the map resolution')
-    parser.add_argument('--time-max', type=int, default=250, help='Set the map resolution')
+    parser.add_argument('--time-max', type=int, default=1000, help='Set the map resolution')
     opt = parser.parse_args()
     return opt
 
