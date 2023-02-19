@@ -2,10 +2,12 @@ import numpy as np
 from numpy import random
 from numpy.linalg import norm
 import random
-from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d
 import math
 import sympy
 from tqdm import tqdm
+
+from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d
+from src.python.parameters import *
 
 """
 Stance = (f_swing, f_support)
@@ -53,6 +55,10 @@ def RRT(initial_Stance, goal_region, map, time_max):
     rrt_root = Node(initial_Stance[0], initial_Stance[1], f_swg_id='Right')
     x_range, y_range, z_range = map.world_dimensions
     
+    if not r2_feasibility(rrt_root.f_sup, rrt_root.f_swg, rrt_root.f_swg_id):
+        print('Initial stance NOT feasible!\n')
+        return []
+            
     if goal_check(rrt_root, goal_region):
         print('Already in the goal region! No steps needed')
         return retrieve_all_steps(rrt_root)
@@ -82,9 +88,9 @@ def RRT(initial_Stance, goal_region, map, time_max):
         if not r1_feasibility(candidate_sup_f, map):
             # print('r1_check fail')
             continue # The current expansion attempt is aborted and a new iteration is started
-        if not r2_feasibility(v_near.f_sup, candidate_sup_f, candidate_id):
-            # print('r2:check fail')
-            continue
+        if not r2_feasibility(v_near.f_sup, candidate_sup_f, v_near.f_swg_id): # Redundant check. It has to be guaranteed by the primitive selection.
+            print('R2 Fail: Check primitive selection!')
+            break
         if not r3_feasibility(v_near.f_swg, candidate_sup_f, map):
             # print('r3:check fail')
             continue
@@ -177,7 +183,7 @@ def v_near_selection(node, p_rand):
 
 
 
-def node_to_point_distance(node, point, k_mu = 1):
+def node_to_point_distance(node, point, k_mu = K_MU):
     mid_point = np.array([(node.f_swg[0] + node.f_sup[0])/2, (node.f_swg[1] + node.f_sup[1])/2, (node.f_swg[2] + node.f_sup[2])/2])
     saggital_axis = np.array((node.f_swg[3] + node.f_sup[3]) / 2)
     joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1]), (point[2] - mid_point[2])])
@@ -187,7 +193,7 @@ def node_to_point_distance(node, point, k_mu = 1):
     return distance # Result is in FOOT COORDS
 
 
-def footstep_to_footstep_distance_metric(f1, f2, k_gamma = 0.4):
+def footstep_to_footstep_distance_metric(f1, f2, k_gamma = K_GAMMA):
     p = np.array([f1[0] - f2[0], f1[1] - f2[1], f1[2] - f2[2]])
     angle = np.array([f1[3] - f2[3]])
     metric = norm(p) + k_gamma*norm(angle)
@@ -197,12 +203,12 @@ def footstep_to_footstep_distance_metric(f1, f2, k_gamma = 0.4):
 def neighborhood(vertex, tree_root, r_neigh = 2): # TODO check this part: maybe it considers all the leaf nodes as neighbour
     # Returns a list containing all the nodes of the tree in that have a footstep_to_footstep metric < r_neigh w.r.t VERTEX
     neighbors = []
-    if len(tree.children) == 0:
-        metric = footstep_to_footstep_metric(vertex.f_sup, tree.f_sup)
+    if len(tree_root.children) == 0:
+        metric = footstep_to_footstep_distance_metric(vertex.f_sup, tree_root.f_sup)
         if metric < r_neigh:
-            neighbors.append(tree)
+            neighbors.append(tree_root)
         return neighbors
-    for child in tree.children:
+    for child in tree_root.children:
         list_of_neighbors = neighborhood(vertex, child)
         for neigh in list_of_neighbors:
             neighbors.append(neigh)
@@ -304,55 +310,50 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     return  True
 
 
-def r2_feasibility( f_prev, f_actual, candiate_swg_id): #f_prev è il piede di support del vecchio nodo, f_actual è il piede di sup del nuovo nodo
+def r2_feasibility( f_prev, f_actual, swg_id):
     """
+    Stance feasibility:
+    f_prev: è il piede di support del vecchio nodo 
+    f_actual: è il piede di supporto del nuovo nodo
+    swg_id: swing_id del vecchio nodo. Specifica rispetto a quale piede calcolare la feasibility
     This verifies that the footstep f is kinematically admissibile from the previous footstep f_prev
     The constraints on the 4 dimensions of a footstep( R3 x SO(2)) are chosen by construction, based on 
     dimensions of the robot and the environment. Deltas are the maximum increments acceptable.
     """
-    delta_x_neg = 0.08
-    delta_x_pos = 0.24
-    delta_y_neg = 0.20
-    delta_y_pos = 0.20
-    delta_z_neg = 0.16
-    delta_z_pos = 0.16
-    delta_theta_neg = 0.4
-    delta_theta_pos =0.4
-
-    l = 0.25 #NON MI È CHIARO CHE PARAMETRO SIA. FORSE LA DISTANZA STANDARD LUNGO L'ASSE Y TRA IL PIEDE DESTRO E SINISTRO. CHIEDERE  MICHELE
-
     theta_rot = f_prev[3] # ANGOLO DI ROTAZIONE , PARI ALL'ANGOLO DEL PIEDE DI PARTENZA
     rot_matrix = get_z_rotation_matrix(theta_rot)
     rot_matrix = rot_matrix.transpose()
-    xy_vector = np.array([[f_actual[0] - f_prev[0]], [f_actual[1] - f_prev[1]], [0]])
-    #print("rotation_matrix: ", rot_matrix)
-    #print("prova1: ", xy_vector)
-    #xy_pos = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
-    #    xy_neg = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
     
-    if candiate_swg_id == 'Right':
-        xy = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
-    else:
-        xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
-
-
+    xy_vector = np.array([f_actual[0] - f_prev[0], f_actual[1] - f_prev[1], 0])
+    xy = rot_matrix.dot(xy_vector) #- np.array([[0], [L], [0]])
     z = f_actual[2] - f_prev[2]
     theta = f_actual[3] - f_prev[3]
 
-    #print("xy: ", xy)
+    # xy_vector = np.array([[f_actual[0] - f_prev[0]], [f_actual[1] - f_prev[1]], [0]])
+    #xy_pos = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
+    #    xy_neg = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
+    # if candiate_swg_id == 'Right':
+    #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
+    # else:
+    #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
 
-
-    if ((xy[0] < -delta_x_neg) or (xy[0] > delta_x_pos)):
-        # print('X fail, difference is',xy[0])
+    if ((xy[0] < -DELTA_X_NEG) or (xy[0] > DELTA_X_POS)):
+        print('X fail, difference is',xy[0], '\n')
         return False
-    if ((xy[1] < -delta_y_neg) or (xy[1] > delta_y_pos)):
-        # print("Y_ERROR pos: ", xy[1])
+    
+    if swg_id == 'Left' and ((xy[1] < L - DELTA_Y_NEG) or (xy[1] > L + DELTA_Y_POS)):
+            print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
+            return False
+    elif swg_id == 'Right' and ((xy[1] > -L + DELTA_Y_NEG) or (xy[1] < -L - DELTA_Y_POS)):
+            print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
+            return False
+    
+    if ((z < -DELTA_Z_NEG) or (z > DELTA_Z_POS)):
+        print("z_ERROR: ", z, '\n')
         return False
-    if ((z < -delta_z_neg) or (z > delta_z_pos)):
-        # print("z_ERROR: ", z)
-        return False
-    if ((theta < -delta_theta_neg) or (theta > delta_theta_pos )):
-        # print("THETA_ERROR: ", theta)
+    
+    if ((theta < -DELTA_THETA_NEG) or (theta > DELTA_THETA_POS )):
+        print("THETA_ERROR: ", theta, '\n')
         return False
     return True
 
