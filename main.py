@@ -39,12 +39,17 @@ def main(world_json, resolution, time_max, print_steps):
         f_sup = [-2.4, 1.1, 0.000205, np.pi/2]
         goal_region = (-2.3, 10, 0.728, 0.5) # (x, y, z, radius)
     elif(str(world_json) == 'data/tunnel.json'): # TODO correct initial configuration
-        f_swg = [3.3, -0.2, 0.000205, -np.pi/2]
-        f_sup = [3.3, 0, 0.000205, -np.pi/2]
-        goal_region = (-3.1, -0.5, 0.00205, 0.5) # (x, y, z, radius)
+        f_swg = [3.3, 0.1, 0.000205, np.pi]
+        f_sup = [3.3, -0.1, 0.000205, np.pi]
+        goal_region = (-3.5, 0, 0.00205, 0.4) # (x, y, z, radius)
         # goal_region = [[-3.1, -0.5, 0.00205], [-4, -0.5, 0.00205],[-3.1, 0.4, 0.00205],[-4, 0.4, 0.00205]]  #tunnel map
+    elif(str(world_json) == 'data/world_of_stairs2.json'):
+        f_swg = [-2.725, 0.47, 0.000205, np.pi/2] 
+        f_sup = [-2.925, 0.47, 0.000205, np.pi/2]
+        goal_region = (-2.825, 0.47, 1.903, 0.5) # (x, y, z, radius)
     else:
         print('Initial stance and goal region not specified!')
+        display_results(fig, map)
         return
     
     initial_stance = (f_swg, f_sup)
@@ -75,7 +80,10 @@ def main(world_json, resolution, time_max, print_steps):
         footprint_color = 'blue' if foot_id == 'Right' and i not in [0,1] else 'red' if i not in [0,1] else 'cyan' if foot_id == 'Right' else 'magenta'
         footprint_mesh = go.Mesh3d(name=footprint_name, x=x, y=y, z=z, color=footprint_color)
         fig.add_trace(footprint_mesh, row=1, col=2)
-        
+    display_results(fig, map)
+
+
+def display_results(fig, map):
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), showlegend=False)
     visualization_range = [min(map.world_dimensions[0][0], map.world_dimensions[1][0], map.world_dimensions[2][0]), max(map.world_dimensions[0][1], map.world_dimensions[1][1], map.world_dimensions[2][1])+map.resolution]
     nticks = int(visualization_range[1] - visualization_range[0])*2
@@ -86,10 +94,9 @@ def main(world_json, resolution, time_max, print_steps):
     fig.show()
 
 
-
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--world-json', type=Path, default='data/world_of_stairs.json', help='json file containing the information about the boxes contained in the world')
+    parser.add_argument('--world-json', type=Path, default='data/world_of_stairs2.json', help='json file containing the information about the boxes contained in the world')
     parser.add_argument('--resolution', type=float, default=0.02, help='Set the map resolution')
     parser.add_argument('--time-max', type=int, default=1000, help='Set the map resolution')
     parser.add_argument('--print-steps', action='store_true', help='Print the returned steps information on the terminal')
