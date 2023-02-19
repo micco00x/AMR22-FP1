@@ -74,7 +74,7 @@ def main(world_json, resolution, time_max, print_steps):
         x = vertices[:,0]
         y = vertices[:,1]
         z = np.ones(4, dtype=np.float64)
-        z_delta = 0.01 if i not in [0,1] else 0.1 # little vertical shift to avoid overlappings with objects surfaces and show clearly the starting position
+        z_delta = 0.01 if i not in [0,1] else 0.02 # little vertical shift to avoid overlappings with objects surfaces and show clearly the starting position
         z = z.dot(foot[2] + z_delta) 
         footprint_name = 'Step'+str(i-1) if i not in [0,1] else 'Start'+foot_id
         footprint_color = 'blue' if foot_id == 'Right' and i not in [0,1] else 'red' if i not in [0,1] else 'cyan' if foot_id == 'Right' else 'magenta'
@@ -97,7 +97,7 @@ def display_results(fig, map):
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--world-json', type=Path, default='data/world_of_stairs2.json', help='json file containing the information about the boxes contained in the world')
-    parser.add_argument('--resolution', type=float, default=0.02, help='Set the map resolution')
+    parser.add_argument('--resolution', type=float, default=MLSM_RESOLUTION, help='Set the map resolution')
     parser.add_argument('--time-max', type=int, default=1000, help='Set the map resolution')
     parser.add_argument('--print-steps', action='store_true', help='Print the returned steps information on the terminal')
     opt = parser.parse_args()
