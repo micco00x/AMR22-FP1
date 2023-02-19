@@ -429,36 +429,38 @@ def generate_trajectory(f_prev, f_current, map):
         if h_max_set + f_prev[2] < f_current[2]:
             continue
 
-        #GENERATE TRAJECTORY
+         #GENERATE TRAJECTORY
         #equations to solve
 
         #OPTION 1
         #finding a, b and c we obtain the equations of the parabola, so we can derive more points (in the middle of the path)
         #define variables
-        a, b = sympy.symbols("a b", real=True)
+        #a, b = sympy.symbols("a b", real=True)
 
         #i think i have a range (0, i) for x
         #and starting height is 0, and arriving height is f[2]-f_prev[2]
 
         #set equations equals to 0
         #eq1 = sympy.Eq((-4*a)*h_max_set - b * b, 0) # -4a*h + 4ac - b^2 = 0
-        eq1 = sympy.Eq(a* (distance/2)**2 + b * (distance/2) - h_max_set, 0)
+        #eq1 = sympy.Eq(a* (distance/2)**2 + b * (distance/2) - h_max_set, 0)
         #eq2 = sympy.Eq(c, 0) #because seet start of parabola in the origin
-        eq3 = sympy.Eq((a * distance * distance) + (b * distance) - (f_current[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
+        #eq3 = sympy.Eq((a * distance * distance) + (b * distance) - (f_current[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
         # eq1 = sympy.Eq((-4*a)*h_max_set + (4*a*c) - b * b, 0) # -4a*h + 4ac - b^2 = 0
         # eq2 = sympy.Eq(c, 0) #because seet start of parabola in the origin
         # eq3 = sympy.Eq((a * ipotenusa * ipotenusa) + (b * ipotenusa) + c - (f_current[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
 
+        a_par = 2 * ((f_current[2]-f_prev[2]) - (2 * h_max_set)) / (distance)**2
+        b_par = ((4 * h_max_set) - (f_current[2]-f_prev[2])) / distance
+
         #solve equations -> return an array of dictionaries with the values of each variables
-        res = sympy.solve([eq1, eq3])
+        #res = sympy.solve([eq1, eq3])
 
         #choose the positive values (parameters)
         #a_par = 0
         #b_par = 0
 
-        a_par = res[a]
-        b_par = res[b]
-
+        #a_par = res[a]
+        #b_par = res[b]
 
         '''for i in res:
             if i[a] < a_par:
