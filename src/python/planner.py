@@ -239,29 +239,31 @@ def motion_primitive_selector(node):
     (Recall: foot dimensions are 12x7 units)
     
     """
-    swing = node.f_swg
+    # swing = node.f_swg
     support = node.f_sup
-    saggital_axis = (swing[3] + support[3]) / 2 
-    
-    # x_sup, y_sup, z_sup, theta_sup = support
-    x_swg, y_swg, z_swg, theta_swg = swing
+    # sagital_axis = (swing[3] + support[3]) / 2 
+    # x_swg, y_swg, z_swg, theta_swg = swing
+    x_sup, y_sup, z_sup, theta_sup = support
     y_direction = 1 if node.f_swg_id == 'Left' else -1
     new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
 
-    p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
-    p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
-    p_th = [-(pi/5),-(pi/6), 0, +(pi/6), +(pi/5)]
+    # p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
+    # p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
+    # p_th = [-(pi/5),-(pi/6), 0, +(pi/6), +(pi/5)]
+    p_x = PRIMITIVES_X
+    p_y = PRIMITIVES_Y
+    p_th = PRIMITIVES_THETA
     
-    rot = get_z_rotation_matrix(saggital_axis)
-    delta = [ random.choice(p_x), y_direction*random.choice(p_y), 0, random.choice(p_th)]
+    rot = get_z_rotation_matrix(support[3])
+    delta = [ random.choice(p_x), y_direction*(random.choice(p_y) + L), 0, random.choice(p_th)]
     delta[:-1] = rot.dot(delta[:-1])
-    new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
+    # new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
+    new_support_foot = [ x_sup + delta[0], y_sup + delta[1], z_sup, theta_sup + delta[3]]
     
     new_swing_foot = node.f_sup
     
     return new_swing_foot, new_support_foot, new_id
 
-    
 
 def assign_height(previous_footprint, current_footprint, map):
     h_prev = previous_footprint[2]
@@ -269,16 +271,8 @@ def assign_height(previous_footprint, current_footprint, map):
     if cell == None: return None
     for i, object in enumerate(cell): 
         surface_height = object[0] # DA CORREGGERE
-        #print('surface height', abs(h_prev - surface_height))
-        if abs(h_prev - surface_height) < 0.35: #Se trovs un'altezza fattibilr la assegna ad h_actual
-            #print('SONO ENTRATOOOOOOOOO')
+        if abs(h_prev - surface_height) < DELTA_Z_POS: #Se trovs un'altezza fattibilr la assegna ad h_actual
             return surface_height
-            # for k in range(i+1, len(actual_cell)): #Dopo averla ssegnata prova con quelle rimanenti per vedere se sono meglio
-            #     if abs(h_prev - actual_cell[k][0]) < 0.30:
-            #         if actual_cell[k][0] > h_actual:
-            #             #print('ALLELUJA') #DA CAMBIARE IL SEGNO(metterlo minore) SE IL NOSTRO GOAL È PIÙ IN BASSO rispetto a dove partiamo
-            #             h_actual = actual_cell[k][0]
-            # return h_actual
     return None # questo caso è una sorta di r2 check solo sull' altezza, vuol dire che non cè nessun altezza possbiile da assegnare
 
 
