@@ -98,32 +98,44 @@ def RRT(initial_Stance, goal_region, map, time_max):
         v_candidate = Node(candidate_swg_f, candidate_sup_f, f_swg_id=candidate_id)
 
 
-        """ Step 3) Choosing a parent""" # TODO re-check before integration
-        # neighbors = neighborhood(v_candidate, rrt_root)
-        # candidate_parent = v_near
-        # candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
-        # for neigh in neighbors:
-        #     if r2_feasibility( neigh.f_sup, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
-        #         if r3_feasibility(neigh.f_swg, candidate_sup_f, map ):
-        #             if (cost_of_a_new_vertex(v_candidate, neigh)) < candidate_cost:
-        #                 candidate_parent = neigh
-        #                 candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+        """ Step 3) Choosing a parent"""
+        neighbors = neighborhood(v_candidate, rrt_root)
+
+        '''print("current node: ", v_candidate.f_sup, v_candidate.f_swg)
+        print("vicini")
+        for i in neighbors:
+            print(i.f_sup, i.f_swg)
+        print("------------------")'''
+
+        candidate_parent = v_near
+        candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        for neigh in neighbors:
+            if r2_feasibility( neigh.f_sup, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
+                if r3_feasibility(neigh.f_swg, candidate_sup_f, map ):
+                    if (cost_of_a_new_vertex(v_candidate, neigh)) < candidate_cost:
+                        candidate_parent = neigh
+                        candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+
+        #change swing foot if the parents is not v_near 
+        if candidate_parent != v_near:
+            v_candidate.f_swg = candidate_parent.f_sup
+
+        # Now let's add the node to the tree
+        # # if not v_candidate.parent.parent:
+        if v_candidate not in candidate_parent.children:
+            v_candidate.parent = candidate_parent
+            v_candidate.cost = cost_of_a_new_vertex(v_candidate, candidate_parent) #candidate_cost
+            v_candidate.f_swg_id = candidate_id
+            candidate_parent.children.append(v_candidate)
+        
+        if goal_check(v_candidate, goal_region):
+            goal_nodes.append(v_candidate)
+            break
+
         
 
         '''Step 4): Rewiring '''
         # rewiring(v_candidate, rrt_root, map) # TODO update the rewiring step. I think that right now it does nothing. It has to return the updated root node
-
-        # Now let's add the node to the tree
-        # # if not v_candidate.parent.parent:
-        if v_candidate not in v_near.children:
-            v_candidate.parent = v_near
-            v_candidate.cost = v_near.cost + 1 #candidate_cost
-            v_candidate.f_swg_id = candidate_id
-            v_near.children.append(v_candidate)
-
-        if goal_check(v_candidate, goal_region):
-            goal_nodes.append(v_candidate)
-            break
                       
     print('\n### End RRT search ###')
 
