@@ -34,6 +34,10 @@ def main(world_json, resolution, time_max, print_steps):
         f_swg = [1.85, 2, 0.00020, np.pi/2] 
         f_sup = [1.65, 2, 0.00020, np.pi/2]
         goal_region = (1.85, 2, 3.005, 0.5) # (x, y, z, radius)
+    elif(str(world_json) == 'data/world_of_stairs2.json'):
+        f_swg = [-2.725, 0.47, 0.000205, np.pi/2] 
+        f_sup = [-2.925, 0.47, 0.000205, np.pi/2]
+        goal_region = (-2.825, 0.47, 1.903, 0.5) # (x, y, z, radius)
     elif(str(world_json) == 'data/easy.json'):
         f_swg = [-2.2, 1.1, 0.000205, np.pi/2] 
         f_sup = [-2.4, 1.1, 0.000205, np.pi/2]
@@ -43,10 +47,10 @@ def main(world_json, resolution, time_max, print_steps):
         f_sup = [3.3, -0.1, 0.000205, np.pi]
         goal_region = (-3.5, 0, 0.00205, 0.4) # (x, y, z, radius)
         # goal_region = [[-3.1, -0.5, 0.00205], [-4, -0.5, 0.00205],[-3.1, 0.4, 0.00205],[-4, 0.4, 0.00205]]  #tunnel map
-    elif(str(world_json) == 'data/world_of_stairs2.json'):
-        f_swg = [-2.725, 0.47, 0.000205, np.pi/2] 
-        f_sup = [-2.925, 0.47, 0.000205, np.pi/2]
-        goal_region = (-2.825, 0.47, 1.903, 0.5) # (x, y, z, radius)
+    elif(str(world_json) == 'data/tunnel2.json'): # TODO correct initial configuration
+        f_swg = [3.3, 0.1, 0.000205, np.pi]
+        f_sup = [3.3, -0.1, 0.000205, np.pi]
+        goal_region = (-3.5, 0, 0.00205, 0.4) # (x, y, z, radius)
     else:
         print('Initial stance and goal region not specified!')
         display_results(fig, map)
