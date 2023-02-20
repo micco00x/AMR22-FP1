@@ -35,8 +35,8 @@ def main(world_json, resolution, time_max, print_steps):
         f_sup = [1.65, 2, 0.00020, np.pi/2]
         goal_region = (1.85, 2, 3.005, 0.5) # (x, y, z, radius)
     elif(str(world_json) == 'data/world_of_stairs2.json'):
-        f_swg = [-2.725, 0.47, 0.000205, np.pi/2] 
-        f_sup = [-2.925, 0.47, 0.000205, np.pi/2]
+        f_swg = [-2.525, 1.675, 0.000205, 0] 
+        f_sup = [-2.525, 1.875, 0.000205, 0]
         goal_region = (-2.825, 0.47, 1.903, 0.5) # (x, y, z, radius)
     elif(str(world_json) == 'data/easy.json'):
         f_swg = [-2.2, 1.1, 0.000205, np.pi/2] 
@@ -102,7 +102,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--world-json', type=Path, default='data/world_of_stairs2.json', help='json file containing the information about the boxes contained in the world')
     parser.add_argument('--resolution', type=float, default=MLSM_RESOLUTION, help='Set the map resolution')
-    parser.add_argument('--time-max', type=int, default=1000, help='Set the map resolution')
+    parser.add_argument('--time-max', type=int, default=500, help='Set the map resolution')
     parser.add_argument('--print-steps', action='store_true', help='Print the returned steps information on the terminal')
     opt = parser.parse_args()
     return opt
