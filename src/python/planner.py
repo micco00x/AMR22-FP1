@@ -109,13 +109,13 @@ def RRT(initial_Stance, goal_region, map, time_max):
         print("------------------")'''
 
         candidate_parent = v_near
-        candidate_cost = cost_of_a_new_vertex(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        candidate_cost = cost_of_a_node(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
         for neigh in neighbors:
             if r2_feasibility( neigh.f_sup, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
                 if r3_feasibility(neigh.f_swg, candidate_sup_f, map ):
-                    if (cost_of_a_new_vertex(v_candidate, neigh)) < candidate_cost:
+                    if (cost_of_a_node(v_candidate, neigh)) < candidate_cost:
                         candidate_parent = neigh
-                        candidate_cost = cost_of_a_new_vertex(v_candidate, neigh)
+                        candidate_cost = cost_of_a_node(v_candidate, neigh)
 
         #change swing foot if the parents is not v_near 
         if candidate_parent != v_near:
