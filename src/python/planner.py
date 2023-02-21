@@ -448,9 +448,10 @@ def generate_trajectory(f_prev, f_current, map):
             #reconstruction  of the 3d coordinates
             z = trajectory_params[0] * delta**2 + trajectory_params[1]* delta + f_prev[2]
             delta = np.array([delta * math.cos(theta), delta * math.sin(theta)], dtype=np.float64)
-            delta = rotation_matrix.dot(delta) + f_prev[:1]
-            x = delta[0]
-            y = delta[1]
+            #delta = rotation_matrix.dot(delta) + f_prev[:1]
+            delta = delta + f_prev[:1]
+            x = delta[0] + f_prev[0]
+            y = delta[1] + f_prev[1]
 
             #check dimension foot
             #orientation of the foot (?)
