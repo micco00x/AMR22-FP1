@@ -80,7 +80,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
         """ Step 2) Generating a candidate vertex"""
         # Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
         candidate_swg_f, candidate_sup_f, candidate_id = motion_primitive_selector(v_near) #candidate_id è il piede di swing del nodo candiate
-        candidate_sup_f[2] = assign_height( v_near.f_swg, candidate_sup_f, map)
+        candidate_sup_f[2] = assign_height(v_near.f_sup, candidate_sup_f, map)
         if candidate_sup_f[2] == None: continue
         # Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
 
@@ -126,7 +126,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
         if v_candidate not in candidate_parent.children:
             v_candidate.parent = candidate_parent
             candidate_parent.children.append(v_candidate)
-            v_candidate.cost = cost_of_a_new_vertex(v_candidate, candidate_parent) #candidate_cost
+            v_candidate.cost = cost_of_a_node(v_candidate, candidate_parent) #candidate_cost
             v_candidate.f_swg_id = candidate_id
         
         if goal_check(v_candidate, goal_region):
@@ -229,7 +229,7 @@ def neighborhood(vertex, tree_root, r_neigh = 2): # TODO check this part: maybe 
     return neighbors
 
 
-def cost_of_a_new_vertex(vertex, candidate_parent): # TODO add an heuristic
+def cost_of_a_node(vertex, candidate_parent): # TODO add an heuristic
     """ Returns an integer >= 0 as a cost to reach the vertex from the root"""
     cost = candidate_parent.cost + 1 # Da inserire metrica tra vertex e parent AL POSTO DI 1
     return cost
@@ -279,14 +279,16 @@ def motion_primitive_selector(node):
     return new_swing_foot, new_support_foot, new_id
 
 
-def assign_height(previous_footprint, current_footprint, map):
-    h_prev = previous_footprint[2]
-    cell = map.query(current_footprint[0], current_footprint[1]) #This contains the tuples of obejcts heights
+def assign_height(support_foot, new_swing_foot_position, map):
+    h_prev = support_foot[2]
+    cell = map.query(new_swing_foot_position[0], new_swing_foot_position[1]) #This contains the tuples of obejcts heights
     if cell == None: return None
+    higher_limit = None
     for i, object in enumerate(cell): 
-        surface_height = object[0] # DA CORREGGERE
-        if abs(h_prev - surface_height) < DELTA_Z_POS: #Se trovs un'altezza fattibilr la assegna ad h_actual
+        surface_height = object[0]
+        if (surface_height - h_prev) < DELTA_Z_POS and (surface_height - h_prev) > -DELTA_Z_NEG and (higher_limit == None or object[0] < higher_limit): 
             return surface_height
+        higher_limit = min(higher_limit, object[0] - object[1]) if higher_limit!=None else object[0] - object[1]
     return None # questo caso è una sorta di r2 check solo sull' altezza, vuol dire che non cè nessun altezza possbiile da assegnare
 
 
@@ -350,11 +352,11 @@ def r2_feasibility( f_prev, f_actual, swg_id):
         return False
     
     if swg_id == 'Left' and ((xy[1] < L - DELTA_Y_NEG) or (xy[1] > L + DELTA_Y_POS)):
-            # print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
-            return False
+        # print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
+        return False
     elif swg_id == 'Right' and ((xy[1] > -L + DELTA_Y_NEG) or (xy[1] < -L - DELTA_Y_POS)):
-            # print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
-            return False
+        # print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
+        return False
     
     if ((z < -DELTA_Z_NEG) or (z > DELTA_Z_POS)):
         # print("z_ERROR: ", z, '\n')
@@ -485,7 +487,7 @@ def rewiring(v_new, tree, map): #v_new è il nodo appena aggiunto8 CHE NOI CHIAM
             continue
 
         if (r2_feasibility(v_new.f_sup, neighbor.f_sup, neighbor.f_swg_id) and (r3_feasibility(v_new.f_swg, neighbor.f_sup, map))): #check r2, r3
-            if (cost_of_a_new_vertex(neighbor, v_new)) < neighbor.cost: #check if cost is less
+            if (cost_of_a_node(neighbor, v_new)) < neighbor.cost: #check if cost is less
                 # if neighbor.parent.parent is None:
                 #     continue
                 neighbor.parent.children.remove(neighbor)

@@ -18,6 +18,7 @@ def main(world_json, resolution, time_max, print_steps, display_steps, no_out, o
     fig = make_subplots(
         cols=2,
         specs=[[{"type": "scene"}, {"type": "scene"}]],
+        column_widths=[0.4, 0.6]
     )
 
     # MultiLevelSurfaceMap
