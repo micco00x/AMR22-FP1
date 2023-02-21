@@ -91,11 +91,12 @@ def RRT(initial_Stance, goal_region, map, time_max):
         if not r2_feasibility(v_near.f_sup, candidate_sup_f, v_near.f_swg_id): # Redundant check. It has to be guaranteed by the primitive selection.
             print('R2 Fail: Check primitive selection!')
             break
-        if not r3_feasibility(v_near.f_swg, candidate_sup_f, map):
+        candidate_trajectory = r3_feasibility(v_near.f_swg, candidate_sup_f, map)
+        if not candidate_trajectory:
             # print('r3:check fail')
             continue
         
-        v_candidate = Node(candidate_swg_f, candidate_sup_f, f_swg_id=candidate_id)
+        v_candidate = Node(candidate_swg_f, candidate_sup_f, f_swg_id=candidate_id, trajectory=candidate_trajectory)
 
 
         """ Step 3) Choosing a parent"""
@@ -124,9 +125,9 @@ def RRT(initial_Stance, goal_region, map, time_max):
         # # if not v_candidate.parent.parent:
         if v_candidate not in candidate_parent.children:
             v_candidate.parent = candidate_parent
+            candidate_parent.children.append(v_candidate)
             v_candidate.cost = cost_of_a_new_vertex(v_candidate, candidate_parent) #candidate_cost
             v_candidate.f_swg_id = candidate_id
-            candidate_parent.children.append(v_candidate)
         
         if goal_check(v_candidate, goal_region):
             goal_nodes.append(v_candidate)
@@ -153,19 +154,20 @@ def retrieve_steps(node):
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
     steps=[]
     while(node.parent):
-        steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right'))
+        steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory))
         node = node.parent
-    steps.insert(0, (node.f_swg, node.f_swg_id))
+    steps.insert(0, (node.f_swg, node.f_swg_id, node.trajectory))
+    steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory))
     return steps
 
 
 def retrieve_all_steps(node):
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
-    steps = [(node.f_swg, node.f_swg_id)]
+    steps = [(node.f_swg, node.f_swg_id, node.trajectory)]
     queue = [node]
     while len(queue): # finchè la coda non è vuota
         node = queue.pop()
-        steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right') )
+        steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory) )
         for child in node.children:
             queue.append(child)
     return steps
@@ -227,7 +229,7 @@ def neighborhood(vertex, tree_root, r_neigh = 2): # TODO check this part: maybe 
     return neighbors
 
 
-def cost_of_a_new_vertex(vertex, candidate_parent):
+def cost_of_a_new_vertex(vertex, candidate_parent): # TODO add an heuristic
     """ Returns an integer >= 0 as a cost to reach the vertex from the root"""
     cost = candidate_parent.cost + 1 # Da inserire metrica tra vertex e parent AL POSTO DI 1
     return cost
@@ -344,22 +346,22 @@ def r2_feasibility( f_prev, f_actual, swg_id):
     #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
 
     if ((xy[0] < -DELTA_X_NEG) or (xy[0] > DELTA_X_POS)):
-        print('X fail, difference is',xy[0], '\n')
+        # print('X fail, difference is',xy[0], '\n')
         return False
     
     if swg_id == 'Left' and ((xy[1] < L - DELTA_Y_NEG) or (xy[1] > L + DELTA_Y_POS)):
-            print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
+            # print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
             return False
     elif swg_id == 'Right' and ((xy[1] > -L + DELTA_Y_NEG) or (xy[1] < -L - DELTA_Y_POS)):
-            print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
+            # print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
             return False
     
     if ((z < -DELTA_Z_NEG) or (z > DELTA_Z_POS)):
-        print("z_ERROR: ", z, '\n')
+        # print("z_ERROR: ", z, '\n')
         return False
     
     if ((theta < -DELTA_THETA_NEG) or (theta > DELTA_THETA_POS )):
-        print("THETA_ERROR: ", theta, '\n')
+        # print("THETA_ERROR: ", theta, '\n')
         return False
     return True
 
@@ -411,12 +413,7 @@ def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual
     
 
     #FOOT TRAJECTORY CHECK
-    trajectory = generate_trajectory(f_prev, f_actual, map)
-    if trajectory == -1:
-        return False
-
-    return True
-
+    return generate_trajectory(f_prev, f_actual, map)
 
 
 
@@ -436,52 +433,10 @@ def generate_trajectory(f_prev, f_current, map):
         if h_max_set + f_prev[2] < f_current[2]:
             continue
 
-         #GENERATE TRAJECTORY
-        #equations to solve
-
-        #OPTION 1
-        #finding a, b and c we obtain the equations of the parabola, so we can derive more points (in the middle of the path)
-        #define variables
-        #a, b = sympy.symbols("a b", real=True)
-
-        #i think i have a range (0, i) for x
-        #and starting height is 0, and arriving height is f[2]-f_prev[2]
-
-        #set equations equals to 0
-        #eq1 = sympy.Eq((-4*a)*h_max_set - b * b, 0) # -4a*h + 4ac - b^2 = 0
-        #eq1 = sympy.Eq(a* (distance/2)**2 + b * (distance/2) - h_max_set, 0)
-        #eq2 = sympy.Eq(c, 0) #because seet start of parabola in the origin
-        #eq3 = sympy.Eq((a * distance * distance) + (b * distance) - (f_current[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
-        # eq1 = sympy.Eq((-4*a)*h_max_set + (4*a*c) - b * b, 0) # -4a*h + 4ac - b^2 = 0
-        # eq2 = sympy.Eq(c, 0) #because seet start of parabola in the origin
-        # eq3 = sympy.Eq((a * ipotenusa * ipotenusa) + (b * ipotenusa) + c - (f_current[2]-f_prev[2]), 0) #point on x = ipotenusa, and y = f[2]-f_prev[2]
-
         a_par = 2 * ((f_current[2]-f_prev[2]) - (2 * h_max_set)) / (distance)**2
         b_par = ((4 * h_max_set) - (f_current[2]-f_prev[2])) / distance
 
-        #solve equations -> return an array of dictionaries with the values of each variables
-        #res = sympy.solve([eq1, eq3])
-
-        #choose the positive values (parameters)
-        #a_par = 0
-        #b_par = 0
-
-        #a_par = res[a]
-        #b_par = res[b]
-
-        '''for i in res:
-            if i[a] < a_par:
-                a_par = i[a]
-                b_par = i[b]'''
-        
         trajectory_params = [a_par, b_par]
-
-
-        #print("A: ", a_par, " and B: ", b_par)
-
-        #idea:
-        #y dell'equazione della parabola è z
-        #x dell'equazione della parabola è la proiezione sin cos di x e y (da capire bene come farla, in base a cosa scelgo sin e cos)
 
         collision = False
         interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
@@ -505,7 +460,7 @@ def generate_trajectory(f_prev, f_current, map):
             if collision: break
         if collision: continue
         return trajectory_params #doesn't exist any feasible trajectory
-    return -1
+    return None
 
 
 
@@ -525,9 +480,6 @@ def rewiring(v_new, tree, map): #v_new è il nodo appena aggiunto8 CHE NOI CHIAM
     for neighbor in neighbors:
         if neighbor.parent is None:
             continue
-        '''if v_new.parent is None:
-            print('MA CHE CAZZO DICI ?????', 'V_new è', v_new.f_swg, v_new.f_sup)
-            print('MA CHE CAZZO DICI ?????', 'V_new è', tree.f_swg, tree.f_sup)'''
 
         if neighbor == v_new.parent:  #if parents skip
             continue

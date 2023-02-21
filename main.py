@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import numpy as np
 import argparse
 from pathlib import Path
@@ -13,7 +14,7 @@ from src.python.planner import RRT
 from src.python.parameters import *
 
 
-def main(world_json, resolution, time_max, print_steps):
+def main(world_json, resolution, time_max, print_steps, display_steps, no_out, out):
     fig = make_subplots(
         cols=2,
         specs=[[{"type": "scene"}, {"type": "scene"}]],
@@ -69,11 +70,22 @@ def main(world_json, resolution, time_max, print_steps):
     # Planning    
     steps = RRT(initial_stance, goal_region, map, time_max)
     
-    # Show footsteps 
+    # Output file creation
+    if(not no_out):
+        f = open(out, 'w')
+        labels = 'NR\tswg_id\tpos_x\tpos:y\tpos_z\torientation\ttrajectory_params\n'
+        f.write(labels)
+            
     for i, step in enumerate(steps):
         foot = step[0]
         foot_id = step[1]
+        traj_params = step[2]
         if(print_steps): print('Footprint '+ str(i) +':\t', foot, '\t', foot_id)
+        # Steps info in output file:
+        if(not no_out and i not in [0,1]):
+            info = str(i-1) + '\t' + foot_id + '\t' + str(foot[0]) + '\t' + str(foot[1]) + '\t' + str(foot[2]) + '\t' + str(foot[3]) + '\t' + str(traj_params) + '\n' 
+            f.write(info)
+        # Steps visualization:
         vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), ROBOT_FOOT_SIZE, foot[3])
         x = vertices[:,0]
         y = vertices[:,1]
@@ -84,7 +96,12 @@ def main(world_json, resolution, time_max, print_steps):
         footprint_color = 'blue' if foot_id == 'Right' and i not in [0,1] else 'red' if i not in [0,1] else 'cyan' if foot_id == 'Right' else 'magenta'
         footprint_mesh = go.Mesh3d(name=footprint_name, x=x, y=y, z=z, color=footprint_color)
         fig.add_trace(footprint_mesh, row=1, col=2)
-    display_results(fig, map)
+    
+    # Show footsteps 
+    if(display_steps): display_results(fig, map)
+    
+    if(not no_out): f.close()
+        
 
 
 def display_results(fig, map):
@@ -104,6 +121,9 @@ def parse_opt():
     parser.add_argument('--resolution', type=float, default=MLSM_RESOLUTION, help='Set the map resolution')
     parser.add_argument('--time-max', type=int, default=500, help='Set the map resolution')
     parser.add_argument('--print-steps', action='store_true', help='Print the returned steps information on the terminal')
+    parser.add_argument('--display-steps', action='store_false', help='Show the returned steps information in a 3D scene')
+    parser.add_argument('--no-out', action='store_true', help='Don\'t save the final output in a file.')
+    parser.add_argument('--out', type=Path, default='outputs/out.tsv', help='Path to the tsv file where to store the output.')
     opt = parser.parse_args()
     return opt
 
