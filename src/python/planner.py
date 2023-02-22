@@ -3,7 +3,6 @@ from numpy import random
 from numpy.linalg import norm
 import random
 import math
-import sympy
 from tqdm import tqdm
 
 from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d
@@ -441,23 +440,26 @@ def generate_trajectory(f_prev, f_current, map):
         trajectory_params = [a_par, b_par]
 
         collision = False
-        interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
+        pos_interval = np.linspace(0, distance, num=TRAJECTORY_STEPS, endpoint=True) #num = number of value to generate in the interval
+        orientation_interval = np.linspace(f_prev[3], f_prev[3] + (f_current[3] - f_prev[3]), num=TRAJECTORY_STEPS, endpoint=True)
         theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
-        rotation_matrix = get_z_rotation_matrix_2d(theta)
-        for delta in interval:
+        rotation_matrix = get_z_rotation_matrix(theta)
+        for t in range(TRAJECTORY_STEPS):
+            new_theta = orientation_interval[t]
+            x_t = pos_interval[t]
             #reconstruction  of the 3d coordinates
-            z = trajectory_params[0] * delta**2 + trajectory_params[1]* delta + f_prev[2]
-            delta = np.array([delta * math.cos(theta), delta * math.sin(theta)], dtype=np.float64)
-            #delta = rotation_matrix.dot(delta) + f_prev[:1]
-            delta = delta + f_prev[:1]
-            x = delta[0] + f_prev[0]
-            y = delta[1] + f_prev[1]
+            z_t = trajectory_params[0] * x_t**2 + trajectory_params[1]*x_t + f_prev[2]
+            delta = np.array([x_t, 0., z_t], dtype=np.float64)
+            rotated_delta = rotation_matrix.dot(delta)
+            new_pos = f_prev[:1] + rotated_delta
+            x_t, y_t = new_pos[0:2]
+            
 
             #check dimension foot
             #orientation of the foot (?)
-            foot_size = [0.26, 0.15]
-            for vertex in get_2d_rectangle_coordinates([x,y], foot_size, f_prev[3]):
-                if (not (map.check_collision(vertex[0], vertex[1], z))):
+            # foot_size = [0.26, 0.15]
+            for vertex in get_2d_rectangle_coordinates([x_t,y_t], ROBOT_FOOT_SIZE, new_theta):
+                if (not (map.check_collision(vertex[0], vertex[1], z_t))):
                     collision = True
                     break
             if collision: break
