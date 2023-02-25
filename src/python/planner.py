@@ -3,7 +3,6 @@ from numpy import random
 from numpy.linalg import norm
 import random
 import math
-import sympy
 from tqdm import tqdm
 
 from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d
@@ -54,6 +53,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
     """
     rrt_root = Node(initial_Stance[0], initial_Stance[1], f_swg_id='Right')
     x_range, y_range, z_range = map.world_dimensions
+    print('Z_RANGE:', z_range)
     
     if not r2_feasibility(rrt_root.f_sup, rrt_root.f_swg, rrt_root.f_swg_id):
         print('Initial stance NOT feasible!\n')
@@ -67,12 +67,15 @@ def RRT(initial_Stance, goal_region, map, time_max):
     v_candidate = None
     for i in tqdm(range(time_max)):
         """ Step 1) Selecting a vertex for expansion"""
-        x_rand = random.random()*abs(x_range[1] - x_range[0]) + x_range[0]
-        y_rand = random.random()*abs(y_range[1] - y_range[0]) + y_range[0]
-        z_rand = random.random()*abs(z_range[1] - z_range[0] + 3) + z_range[0] # 1.5m added on top and at the bottom to have a better distribution
-        p_rand = [x_rand, y_rand, z_rand] # random point in (x,y,z)
+        if i % 10 == 0:
+            p_rand = goal_region[:-1]
+        else:
+            x_rand = random.random()*abs(x_range[1] - x_range[0]) + x_range[0]
+            y_rand = random.random()*abs(y_range[1] - y_range[0]) + y_range[0]
+            z_rand = random.random()*abs(z_range[1] - z_range[0]) + z_range[0] # 1.5m added on top and at the bottom to have a better distribution
+            p_rand = [x_rand, y_rand, z_rand] # random point in (x,y,z)
         
-        distance, v_near = v_near_selection(rrt_root, p_rand) 
+        distance, v_near = v_near_selection(rrt_root, p_rand, z_range) 
         # v_near = rrt_root if i==0 or not v_candidate else v_candidate
         #print('BEST_DISTANCE:',distance)
         
@@ -89,15 +92,16 @@ def RRT(initial_Stance, goal_region, map, time_max):
             # print('r1_check fail')
             continue # The current expansion attempt is aborted and a new iteration is started
         if not r2_feasibility(v_near.f_sup, candidate_sup_f, v_near.f_swg_id): # Redundant check. It has to be guaranteed by the primitive selection.
-            print('R2 Fail: Check primitive selection!')
-            break
+            #print('R2 Fail: Check primitive selection!')
+            continue
         candidate_trajectory = r3_feasibility(v_near.f_swg, candidate_sup_f, map)
         if not candidate_trajectory:
             # print('r3:check fail')
             continue
         
         v_candidate = Node(candidate_swg_f, candidate_sup_f, f_swg_id=candidate_id, trajectory=candidate_trajectory)
-
+        v_candidate.parent = v_near
+        v_near.children.append(v_candidate)
 
         """ Step 3) Choosing a parent"""
         neighbors = neighborhood(v_candidate, rrt_root)
@@ -109,13 +113,13 @@ def RRT(initial_Stance, goal_region, map, time_max):
         print("------------------")'''
 
         candidate_parent = v_near
-        candidate_cost = cost_of_a_node(v_candidate, candidate_parent) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        candidate_cost = cost_of_a_node(v_candidate, candidate_parent, z_range) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
         for neigh in neighbors:
             if r2_feasibility( neigh.f_sup, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
                 if r3_feasibility(neigh.f_swg, candidate_sup_f, map ):
-                    if (cost_of_a_node(v_candidate, neigh)) < candidate_cost:
+                    if (cost_of_a_node(v_candidate, neigh, z_range)) < candidate_cost:
                         candidate_parent = neigh
-                        candidate_cost = cost_of_a_node(v_candidate, neigh)
+                        candidate_cost = cost_of_a_node(v_candidate, neigh, z_range)
 
         #change swing foot if the parents is not v_near 
         if candidate_parent != v_near:
@@ -123,11 +127,13 @@ def RRT(initial_Stance, goal_region, map, time_max):
 
         # Now let's add the node to the tree
         # # if not v_candidate.parent.parent:
-        if v_candidate not in candidate_parent.children:
-            v_candidate.parent = candidate_parent
-            candidate_parent.children.append(v_candidate)
-            v_candidate.cost = cost_of_a_node(v_candidate, candidate_parent) #candidate_cost
-            v_candidate.f_swg_id = candidate_id
+        if candidate_parent != v_near:
+            if v_candidate not in candidate_parent.children:
+                v_candidate.parent = candidate_parent
+                candidate_parent.children.append(v_candidate)
+                v_candidate.cost = cost_of_a_node(v_candidate, candidate_parent, z_range) #candidate_cost
+                v_near.children.remove(v_candidate)
+                v_candidate.f_swg_id = candidate_id
         
         if goal_check(v_candidate, goal_region):
             goal_nodes.append(v_candidate)
@@ -136,7 +142,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
         
 
         '''Step 4): Rewiring '''
-        # rewiring(v_candidate, rrt_root, map) # TODO update the rewiring step. I think that right now it does nothing. It has to return the updated root node
+        rewiring(v_candidate, rrt_root, map, z_range) # TODO update the rewiring step. I think that right now it does nothing. It has to return the updated root node
                       
     print('\n### End RRT search ###')
 
@@ -180,15 +186,15 @@ def goal_check(node, goal):
     return False # Result is in MAP COORDS            
 
 
-def v_near_selection(node, p_rand):
-    best_distance = node_to_point_distance(node, p_rand)
+def v_near_selection(node, p_rand, z_range):
+    best_distance = node_to_point_distance(node, p_rand, z_range)
     v_near = node
     if len(node.children) == 0:
         return best_distance, v_near
     
     # TODO make it iterative
     for child in node.children:
-        child_distance, child_v_near = v_near_selection(child, p_rand)
+        child_distance, child_v_near = v_near_selection(child, p_rand, z_range)
         if child_distance < best_distance:
             best_distance = child_distance
             v_near = child_v_near
@@ -197,13 +203,20 @@ def v_near_selection(node, p_rand):
 
 
 
-def node_to_point_distance(node, point, k_mu = K_MU):
+def node_to_point_distance(node, point, z_range, k_mu = K_MU):
+    if point[2] > 1:
+        f = 1
+    else:
+        f = -1
     mid_point = np.array([(node.f_swg[0] + node.f_sup[0])/2, (node.f_swg[1] + node.f_sup[1])/2, (node.f_swg[2] + node.f_sup[2])/2])
     saggital_axis = np.array((node.f_swg[3] + node.f_sup[3]) / 2)
     joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1]), (point[2] - mid_point[2])])
     phi = np.arctan2(joining_vector[1], joining_vector[0])
-    distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi)
-    
+    mean_height = np.array([(node.f_swg[2] + node.f_sup[2]) / 2],  dtype=np.float64) #altezza media del nodo
+    if f == 1: # second floor
+        distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[1] - mean_height)) # When the node is at the second floor, this malus is zero
+    if f == -1: # ground floor
+        distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[0] - mean_height)) #When the node is ate groudn floor. this malus is zero
     return distance # Result is in FOOT COORDS
 
 
@@ -229,9 +242,12 @@ def neighborhood(vertex, tree_root, r_neigh = 2): # TODO check this part: maybe 
     return neighbors
 
 
-def cost_of_a_node(vertex, candidate_parent): # TODO add an heuristic
+def cost_of_a_node(vertex, candidate_parent, z_range): # TODO add an heuristic
     """ Returns an integer >= 0 as a cost to reach the vertex from the root"""
-    cost = candidate_parent.cost + 1 # Da inserire metrica tra vertex e parent AL POSTO DI 1
+    kj = (vertex.f_swg[2] + vertex.f_sup[2])/2 # Altezza media del nodo
+    mid_point = np.array([(vertex.f_swg[0] + vertex.f_sup[0])/2, (vertex.f_swg[1] +vertex.f_sup[1])/2, (vertex.f_swg[2] + vertex.f_sup[2])/2])
+    #d = norm((goal_region[0] - mid_point[0]) + 10*(goal_region[1] - mid_point[1]))
+    cost = candidate_parent.cost + 100*(z_range[1]-kj) + 1 # Il costo è minore all' aumenatre dell'altezza media del nodo
     return cost
 
 
@@ -269,7 +285,7 @@ def motion_primitive_selector(node):
     p_th = PRIMITIVES_THETA
     
     rot = get_z_rotation_matrix(support[3])
-    delta = [ random.choice(p_x), y_direction*(random.choice(p_y) + L), 0, random.choice(p_th)]
+    delta = [ random.choice(p_x), y_direction*(random.choice(p_y) + L), 0, y_direction*random.choice(p_th)]
     delta[:-1] = rot.dot(delta[:-1])
     # new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
     new_support_foot = [ x_sup + delta[0], y_sup + delta[1], z_sup, theta_sup + delta[3]]
@@ -390,27 +406,16 @@ def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual
     v = vertex (mid point)
     """
 
-    #BODY DOESN'T COLLIDE
-    r = 0.40 #raggio del cilindro (iperparametro da definire) [40 cm = ?]
-    #Ab = math.pi * r * r #area di base (pi greco * raggio^2)
-    h_robot = 1.5 #altezza robot (iperparametro da definire) [2 m = ?] (deve essere maggiore dell'altezza originale)
-    zb = 0.40 #altezza da terra in cui non si calcola il cylindro (dove permetto i movimenti) (iperparametro da definire) [40 cm = ?]
-
     x_mean = (f_actual[0] + f_prev[0])/2
     y_mean = (f_actual[1] + f_prev[1])/2
     z_mean = (f_actual[2] + f_prev[2])/2
-    z_range = h_robot - zb
+    z_range = HEIGHT_ROBOT - ZB
 
-    #print("foot actual: ", f_actual)
-    #print("foot prev: ", f_prev)
-
-    #è piu un # che un cylindro
-    range_x = np.linspace((x_mean-r), (x_mean+r), num=10, endpoint=True)
-    range_y = np.linspace((y_mean-r), (y_mean+r), num=10, endpoint=True)
+    range_x = np.linspace((x_mean-R), (x_mean+R), num=10, endpoint=True)
+    range_y = np.linspace((y_mean-R), (y_mean+R), num=10, endpoint=True)
     for x in range_x:
         for y in range_y:
-            if (not (map.check_collision(x, y, h_robot+z_mean, z_range))):
-                print('forse')
+            if (not (map.check_collision(x, y, HEIGHT_ROBOT+z_mean, z_depth=z_range))):
                 return False
     
 
@@ -422,14 +427,17 @@ def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual
 
 
 def generate_trajectory(f_prev, f_current, map):
-    h_min = 0.05 #minimum height for the step (iperparametro da definire) [5 cm = ?]
-    h_max = 0.30 #maximum height for the step (iperparametro da definire) [30 cm = ?]
+    h_min = 0.02 #minimum height for the step (iperparametro da definire) [5 cm = ?]
+    h_max = 0.24 #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
     #calcolate ipotenusa
     distance = math.sqrt(((f_current[0]-f_prev[0])**2) + ((f_current[1]-f_prev[1])**2))
     if not distance:
         return [0, 0] #
     #generate trajectory with all h feasible until one is acceptable
+    interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
+    theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
+    rotation_matrix = get_z_rotation_matrix_2d(theta)
     for h_max_set in np.linspace(h_min, h_max, 6, endpoint= True):
         #check if it can exists
         if h_max_set + f_prev[2] < f_current[2]:
@@ -441,29 +449,28 @@ def generate_trajectory(f_prev, f_current, map):
         trajectory_params = [a_par, b_par]
 
         collision = False
-        interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
-        theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
-        rotation_matrix = get_z_rotation_matrix_2d(theta)
         for delta in interval:
             #reconstruction  of the 3d coordinates
             z = trajectory_params[0] * delta**2 + trajectory_params[1]* delta + f_prev[2]
-            delta = np.array([delta * math.cos(theta), delta * math.sin(theta)], dtype=np.float64)
-            #delta = rotation_matrix.dot(delta) + f_prev[:1]
-            delta = delta + f_prev[:1]
+            delta = np.array([delta, z], dtype=np.float64)
+            delta = rotation_matrix.dot(delta)
+            #delta = delta + f_prev[:1]
             x = delta[0] + f_prev[0]
             y = delta[1] + f_prev[1]
 
             #check dimension foot
             #orientation of the foot (?)
-            foot_size = [0.26, 0.15]
-            for vertex in get_2d_rectangle_coordinates([x,y], foot_size, f_prev[3]):
+            for vertex in get_2d_rectangle_coordinates([x,y], FOOT_SIZE_CHECK, f_prev[3]):
                 if (not (map.check_collision(vertex[0], vertex[1], z))):
                     collision = True
                     break
-            if collision: break
+            if collision:
+                #print("ERRRORRRRRRR")
+                trajectory_params = None
+                break
         if collision: continue
-        return trajectory_params #doesn't exist any feasible trajectory
-    return None
+
+    return trajectory_params #doesn't exist any feasible trajectory
 
 
 
@@ -474,7 +481,8 @@ def generate_trajectory(f_prev, f_current, map):
 
 
 
-def rewiring(v_new, tree, map): #v_new è il nodo appena aggiunto8 CHE NOI CHIAMIAMO v_candidate
+
+def rewiring(v_new, tree, map, z_range): #v_new è il nodo appena aggiunto8 CHE NOI CHIAMIAMO v_candidate
     # print("nodo: ", tree.children)
     # print("v_new: ", v_new)
     if v_new == tree:# Se v_new è la radice dopo non puoi fare la verifica sul suo parent
@@ -488,7 +496,7 @@ def rewiring(v_new, tree, map): #v_new è il nodo appena aggiunto8 CHE NOI CHIAM
             continue
 
         if (r2_feasibility(v_new.f_sup, neighbor.f_sup, neighbor.f_swg_id) and (r3_feasibility(v_new.f_swg, neighbor.f_sup, map))): #check r2, r3
-            if (cost_of_a_node(neighbor, v_new)) < neighbor.cost: #check if cost is less
+            if (cost_of_a_node(neighbor, v_new, z_range)) < neighbor.cost: #check if cost is less
                 # if neighbor.parent.parent is None:
                 #     continue
                 neighbor.parent.children.remove(neighbor)

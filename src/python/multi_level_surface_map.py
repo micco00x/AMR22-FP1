@@ -81,8 +81,12 @@ class MultiLevelSurfaceMap():
         levels = self.query(x, y)
         if(not levels): return True
         for level in levels:
-            if( (z > level[0] and z - z_depth < level[0]) or (z >= level[0] - level[1] and z - z_depth <= level[0] - level[1])):
-                return False
+            if(z_depth == 0):
+                if(z > level[0] - level[1]) and (z < level[0]): 
+                    return False
+            else:
+                if(z >= level[0] and (z - z_depth < level[0] or z - z_depth < level[0] - level[1])) or (z <= level[0] and z >= level[0] - level[1]):
+                    return False
         return True
     
     
