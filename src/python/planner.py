@@ -449,18 +449,22 @@ def generate_trajectory(f_prev, f_current, map):
         trajectory_params = [a_par, b_par]
 
         collision = False
+        interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
+        theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
+        rotation_matrix = get_z_rotation_matrix_2d(theta)
         for delta in interval:
             #reconstruction  of the 3d coordinates
             z = trajectory_params[0] * delta**2 + trajectory_params[1]* delta + f_prev[2]
-            delta = np.array([delta, z], dtype=np.float64)
-            delta = rotation_matrix.dot(delta)
-            #delta = delta + f_prev[:1]
+            delta = np.array([delta * math.cos(theta), delta * math.sin(theta)], dtype=np.float64)
+            #delta = rotation_matrix.dot(delta) + f_prev[:1]
+            delta = delta + f_prev[:1]
             x = delta[0] + f_prev[0]
             y = delta[1] + f_prev[1]
 
             #check dimension foot
             #orientation of the foot (?)
-            for vertex in get_2d_rectangle_coordinates([x,y], FOOT_SIZE_CHECK, f_prev[3]):
+            foot_size = [0.26, 0.15]
+            for vertex in get_2d_rectangle_coordinates([x,y], foot_size, f_prev[3]):
                 if (not (map.check_collision(vertex[0], vertex[1], z))):
                     collision = True
                     break
