@@ -75,8 +75,8 @@ def RRT(initial_Stance, goal_region, map, time_max):
             z_rand = random.random()*abs(z_range[1] - z_range[0]) + z_range[0] # 1.5m added on top and at the bottom to have a better distribution
             p_rand = [x_rand, y_rand, z_rand] # random point in (x,y,z)
         
-        distance, v_near = v_near_selection(rrt_root, p_rand, z_range) 
-        # v_near = rrt_root if i==0 or not v_candidate else v_candidate
+        # distance, v_near = v_near_selection(rrt_root, p_rand, z_range) 
+        v_near = rrt_root if i==0 or not v_candidate else v_candidate
         #print('BEST_DISTANCE:',distance)
         
                
@@ -92,7 +92,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
             # print('r1_check fail')
             continue # The current expansion attempt is aborted and a new iteration is started
         if not r2_feasibility(v_near.f_sup, candidate_sup_f, v_near.f_swg_id): # Redundant check. It has to be guaranteed by the primitive selection.
-            #print('R2 Fail: Check primitive selection!')
+            print('R2 Fail: Check primitive selection!')
             continue
         candidate_trajectory = r3_feasibility(v_near.f_swg, candidate_sup_f, map)
         if not candidate_trajectory:
@@ -104,7 +104,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
         v_near.children.append(v_candidate)
 
         """ Step 3) Choosing a parent"""
-        neighbors = neighborhood(v_candidate, rrt_root)
+        # neighbors = neighborhood(v_candidate, rrt_root)
 
         '''print("current node: ", v_candidate.f_sup, v_candidate.f_swg)
         print("vicini")
@@ -113,17 +113,17 @@ def RRT(initial_Stance, goal_region, map, time_max):
         print("------------------")'''
 
         candidate_parent = v_near
-        candidate_cost = cost_of_a_node(v_candidate, candidate_parent, z_range) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
-        for neigh in neighbors:
-            if r2_feasibility( neigh.f_sup, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
-                if r3_feasibility(neigh.f_swg, candidate_sup_f, map ):
-                    if (cost_of_a_node(v_candidate, neigh, z_range)) < candidate_cost:
-                        candidate_parent = neigh
-                        candidate_cost = cost_of_a_node(v_candidate, neigh, z_range)
+        # # candidate_cost = cost_of_a_node(v_candidate, candidate_parent, z_range) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
+        # # for neigh in neighbors:
+        # #     if r2_feasibility( neigh.f_sup, candidate_sup_f, neigh.f_swg_id): ###HERE WE MUST ADD ALSO R3 FEASIBILITY
+        # #         if r3_feasibility(neigh.f_swg, candidate_sup_f, map ):
+        # #             if (cost_of_a_node(v_candidate, neigh, z_range)) < candidate_cost:
+        # #                 candidate_parent = neigh
+        # #                 candidate_cost = cost_of_a_node(v_candidate, neigh, z_range)
 
-        #change swing foot if the parents is not v_near 
-        if candidate_parent != v_near:
-            v_candidate.f_swg = candidate_parent.f_sup
+        # # #change swing foot if the parents is not v_near 
+        # # if candidate_parent != v_near:
+        # #     v_candidate.f_swg = candidate_parent.f_sup
 
         # Now let's add the node to the tree
         # # if not v_candidate.parent.parent:
@@ -142,7 +142,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
         
 
         '''Step 4): Rewiring '''
-        rewiring(v_candidate, rrt_root, map, z_range) # TODO update the rewiring step. I think that right now it does nothing. It has to return the updated root node
+        # # rewiring(v_candidate, rrt_root, map, z_range) # TODO update the rewiring step. I think that right now it does nothing. It has to return the updated root node
                       
     print('\n### End RRT search ###')
 
@@ -213,10 +213,11 @@ def node_to_point_distance(node, point, z_range, k_mu = K_MU):
     joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1]), (point[2] - mid_point[2])])
     phi = np.arctan2(joining_vector[1], joining_vector[0])
     mean_height = np.array([(node.f_swg[2] + node.f_sup[2]) / 2],  dtype=np.float64) #altezza media del nodo
-    if f == 1: # second floor
-        distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[1] - mean_height)) # When the node is at the second floor, this malus is zero
-    if f == -1: # ground floor
-        distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[0] - mean_height)) #When the node is ate groudn floor. this malus is zero
+    # if f == 1: # second floor
+    #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[1] - mean_height)) # When the node is at the second floor, this malus is zero
+    # if f == -1: # ground floor
+    #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[0] - mean_height)) #When the node is ate groudn floor. this malus is zero
+    distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) # When the node is at the second floor, this malus is zero
     return distance # Result is in FOOT COORDS
 
 
@@ -320,16 +321,17 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
 
     x = f[0]
     y = f[1]
+    z = f[2]
     orientation = f[3]
-    size = [0.26, 0.15] #Foot size of the robot
+    size = ROBOT_FOOT_SIZE#[0.20, 0.12] #Foot size of the robot
     vertices = get_2d_rectangle_coordinates([x,y], size, orientation)
     #print('Vetices: ', vertices)
-
+    
     for ver in vertices:
         cell = map.query(ver[0], ver[1])
         if cell == None:
             return False
-        elif  any((obj[0] >= (f[2]) and obj[0] <= (f[2]) ) for obj in cell):
+        elif  any( (obj[0] == f[2]) for obj in cell ):
             continue
         else:
             return False
@@ -364,22 +366,22 @@ def r2_feasibility( f_prev, f_actual, swg_id):
     #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
 
     if ((xy[0] < -DELTA_X_NEG) or (xy[0] > DELTA_X_POS)):
-        # print('X fail, difference is',xy[0], '\n')
+        print('X fail, difference is',xy[0], '\n')
         return False
     
     if swg_id == 'Left' and ((xy[1] < L - DELTA_Y_NEG) or (xy[1] > L + DELTA_Y_POS)):
-        # print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
+        print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
         return False
     elif swg_id == 'Right' and ((xy[1] > -L + DELTA_Y_NEG) or (xy[1] < -L - DELTA_Y_POS)):
-        # print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
+        print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
         return False
     
     if ((z < -DELTA_Z_NEG) or (z > DELTA_Z_POS)):
-        # print("z_ERROR: ", z, '\n')
+        print("z_ERROR: ", z, '\n')
         return False
     
     if ((theta < -DELTA_THETA_NEG) or (theta > DELTA_THETA_POS )):
-        # print("THETA_ERROR: ", theta, '\n')
+        print("THETA_ERROR: ", theta, '\n')
         return False
     return True
 
