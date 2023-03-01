@@ -53,7 +53,6 @@ def RRT(initial_Stance, goal_region, map, time_max):
     """
     rrt_root = Node(initial_Stance[0], initial_Stance[1], f_swg_id='Right')
     x_range, y_range, z_range = map.world_dimensions
-    print('Z_RANGE:', z_range)
     
     if not r2_feasibility(rrt_root.f_sup, rrt_root.f_swg, rrt_root.f_swg_id):
         print('Initial stance NOT feasible!\n')
@@ -75,8 +74,8 @@ def RRT(initial_Stance, goal_region, map, time_max):
             z_rand = random.random()*abs(z_range[1] - z_range[0]) + z_range[0] # 1.5m added on top and at the bottom to have a better distribution
             p_rand = [x_rand, y_rand, z_rand] # random point in (x,y,z)
         
-        # distance, v_near = v_near_selection(rrt_root, p_rand, z_range) 
-        v_near = rrt_root if i==0 or not v_candidate else v_candidate
+        distance, v_near = v_near_selection(rrt_root, p_rand, z_range) 
+        #v_near = rrt_root if i==0 or not v_candidate else v_candidate
         #print('BEST_DISTANCE:',distance)
         
                
