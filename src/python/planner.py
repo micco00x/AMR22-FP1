@@ -185,21 +185,22 @@ def goal_check(node, goal):
     return False # Result is in MAP COORDS            
 
 
-def v_near_selection(node, p_rand, z_range):
-    best_distance = node_to_point_distance(node, p_rand, z_range)
-    v_near = node
-    if len(node.children) == 0:
-        return best_distance, v_near
+def v_near_selection(rrt_root, p_rand, z_range):
+    best_distance = node_to_point_distance(rrt_root, p_rand, z_range)
+    v_near = rrt_root
     
-    # TODO make it iterative
-    for child in node.children:
-        child_distance, child_v_near = v_near_selection(child, p_rand, z_range)
-        if child_distance < best_distance:
-            best_distance = child_distance
-            v_near = child_v_near
+    # BFS on the RRT tree
+    queue = rrt_root.children.copy() 
+    while len(queue):
+        node = queue.pop(0)
+        distance = node_to_point_distance(node, p_rand, z_range)
+        if distance < best_distance:
+            best_distance = distance
+            v_near = node
+        for child in node.children:
+            queue.append(child)
             
     return best_distance, v_near 
-
 
 
 def node_to_point_distance(node, point, z_range, k_mu = K_MU):

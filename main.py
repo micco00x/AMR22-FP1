@@ -14,7 +14,7 @@ from src.python.planner import RRT
 from src.python.parameters import *
 
 
-def main(world_json, resolution, time_max, print_steps, display_steps, no_out, out):
+def main(world_json, resolution, time_max, print_steps, no_display_steps, no_out, out):
     fig = make_subplots(
         cols=2,
         specs=[[{"type": "scene"}, {"type": "scene"}]],
@@ -99,7 +99,7 @@ def main(world_json, resolution, time_max, print_steps, display_steps, no_out, o
         fig.add_trace(footprint_mesh, row=1, col=2)
     
     # Show footsteps 
-    if(display_steps): display_results(fig, map)
+    if not no_display_steps: display_results(fig, map)
     
     if(not no_out): f.close()
         
@@ -122,7 +122,7 @@ def parse_opt():
     parser.add_argument('--resolution', type=float, default=MLSM_RESOLUTION, help='Set the map resolution')
     parser.add_argument('--time-max', type=int, default=500, help='Set the map resolution')
     parser.add_argument('--print-steps', action='store_true', help='Print the returned steps information on the terminal')
-    parser.add_argument('--display-steps', action='store_false', help='Show the returned steps information in a 3D scene')
+    parser.add_argument('--no-display-steps', action='store_true', help='Do not show the returned steps information in a 3D scene')
     parser.add_argument('--no-out', action='store_true', help='Don\'t save the final output in a file.')
     parser.add_argument('--out', type=Path, default='outputs/out.tsv', help='Path to the tsv file where to store the output.')
     opt = parser.parse_args()
