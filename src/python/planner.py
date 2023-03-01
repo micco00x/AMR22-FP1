@@ -323,20 +323,19 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
     y = f[1]
     z = f[2]
     orientation = f[3]
-    size = ROBOT_FOOT_SIZE#[0.20, 0.12] #Foot size of the robot
+    size = ROBOT_FOOT_SIZE
     vertices = get_2d_rectangle_coordinates([x,y], size, orientation)
     #print('Vetices: ', vertices)
     
     for ver in vertices:
         cell = map.query(ver[0], ver[1])
-        if cell == None:
+        if cell == None or not map.check_collision(x, y, z): 
             return False
-        elif  any( (obj[0] == f[2]) for obj in cell ):
+        if any( (obj[0] == z) for obj in cell ) and map.check_collision(ver[0], ver[1], z):
             continue
         else:
             return False
-    return  True
-
+    return True
 
 def r2_feasibility( f_prev, f_actual, swg_id):
     """
