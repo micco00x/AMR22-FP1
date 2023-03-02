@@ -204,20 +204,21 @@ def v_near_selection(rrt_root, p_rand, z_range):
 
 
 def node_to_point_distance(node, point, z_range, k_mu = K_MU):
-    if point[2] > 1:
-        f = 1
-    else:
-        f = -1
+    # if point[2] > 1:
+    #     f = 1
+    # else:
+    #     f = -1
     mid_point = np.array([(node.f_swg[0] + node.f_sup[0])/2, (node.f_swg[1] + node.f_sup[1])/2, (node.f_swg[2] + node.f_sup[2])/2])
     saggital_axis = np.array((node.f_swg[3] + node.f_sup[3]) / 2)
     joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1]), (point[2] - mid_point[2])])
     phi = np.arctan2(joining_vector[1], joining_vector[0])
-    mean_height = np.array([(node.f_swg[2] + node.f_sup[2]) / 2],  dtype=np.float64) #altezza media del nodo
+    # mean_height = np.array([(node.f_swg[2] + node.f_sup[2]) / 2],  dtype=np.float64) #altezza media del nodo
     # if f == 1: # second floor
     #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[1] - mean_height)) # When the node is at the second floor, this malus is zero
     # if f == -1: # ground floor
     #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[0] - mean_height)) #When the node is ate groudn floor. this malus is zero
-    distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) # When the node is at the second floor, this malus is zero
+    distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 10*(point[2] - mid_point[2]) 
+    # distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi)  # original cost function
     return distance # Result is in FOOT COORDS
 
 
