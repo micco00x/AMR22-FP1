@@ -141,7 +141,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
         
 
         '''Step 4): Rewiring '''
-        # # rewiring(v_candidate, rrt_root, map, z_range) # TODO update the rewiring step. I think that right now it does nothing. It has to return the updated root node
+        # # rewiring(v_candidate, rrt_root, map, z_range)
                       
     print('\n### End RRT search ###')
 
@@ -203,7 +203,7 @@ def v_near_selection(rrt_root, p_rand, z_range):
     return best_distance, v_near 
 
 
-def node_to_point_distance(node, point, z_range, k_mu = K_MU):
+def node_to_point_distance(node, point, z_range):
     # if point[2] > 1:
     #     f = 1
     # else:
@@ -217,7 +217,7 @@ def node_to_point_distance(node, point, z_range, k_mu = K_MU):
     #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[1] - mean_height)) # When the node is at the second floor, this malus is zero
     # if f == -1: # ground floor
     #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[0] - mean_height)) #When the node is ate groudn floor. this malus is zero
-    distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 10*(point[2] - mid_point[2]) 
+    distance = norm((mid_point - point)) + K_MU*abs(saggital_axis - phi) + K_HEIGHT*(point[2] - mid_point[2]) 
     # distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi)  # original cost function
     return distance # Result is in FOOT COORDS
 

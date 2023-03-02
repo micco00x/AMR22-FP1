@@ -6,6 +6,7 @@ R = 0.25
 
 K_MU = 1
 K_GAMMA = 0.4
+K_HEIGHT = 10
 
 # Original primitives: # TODO modified value. ask for what to use
 # PRIMITIVES_X = [-0.08, 0, 0.08, 0.16, 0.24] # m
