@@ -36,12 +36,15 @@ class Node():
         self.trajectory = trajectory # Trajectory is the trajectory that , starting from the parent, brings to the actual node
     
     def __eq__(self, other):
-        if (self.f_swg == other.f_swg) and (self.f_sup == other.f_sup):
-            return True
-        if (self.f_swg == other.f_sup) and (self.f_sup == other.f_swg):
-            return True
+        delta_swg = [ abs(self.f_swg[i]-other.f_swg[i]) < 0.001 if i<3 else abs((self.f_swg[i]-other.f_swg[i]+math.pi)%(2*math.pi)-math.pi) < 0.001 for i in range(len(self.f_swg)) ]
+        delta_sup = [ abs(self.f_sup[i]-other.f_sup[i]) < 0.001 if i<3 else abs((self.f_sup[i]-other.f_sup[i]+math.pi)%(2*math.pi)-math.pi) < 0.001 for i in range(len(self.f_swg)) ]
+        if all(delta_swg) and all(delta_sup): return True
+        
+        delta_swg = [ abs(self.f_swg[i]-other.f_sup[i]) < 0.001 if i<3 else abs((self.f_swg[i]-other.f_sup[i]+math.pi)%(2*math.pi)-math.pi) < 0.001 for i in range(len(self.f_swg)) ]
+        delta_sup = [ abs(self.f_sup[i]-other.f_swg[i]) < 0.001 if i<3 else abs((self.f_sup[i]-other.f_swg[i]+math.pi)%(2*math.pi)-math.pi) < 0.001 for i in range(len(self.f_swg)) ]
+        if all(delta_swg) and all(delta_sup): return True
+        
         return False
-
 
 
 
@@ -125,7 +128,6 @@ def RRT(initial_Stance, goal_region, map, time_max):
         # #     v_candidate.f_swg = candidate_parent.f_sup
 
         # Now let's add the node to the tree
-        # # if not v_candidate.parent.parent:
         if candidate_parent != v_near:
             if v_candidate not in candidate_parent.children:
                 v_candidate.parent = candidate_parent
