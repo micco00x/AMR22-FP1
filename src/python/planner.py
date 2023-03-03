@@ -34,6 +34,7 @@ class Node():
         self.cost = cost
         self.f_swg_id = f_swg_id # It always starts by moving right foot first
         self.trajectory = trajectory # Trajectory is the trajectory that , starting from the parent, brings to the actual node
+        self.primitive_catalogue = self.build_primitive_catalogue()
     
     def __eq__(self, other):
         delta_swg = [ abs(self.f_swg[i]-other.f_swg[i]) < 0.001 if i<3 else abs((self.f_swg[i]-other.f_swg[i]+math.pi)%(2*math.pi)-math.pi) < 0.001 for i in range(len(self.f_swg)) ]
@@ -45,6 +46,26 @@ class Node():
         if all(delta_swg) and all(delta_sup): return True
         
         return False
+    
+    def build_primitive_catalogue(self): # Remember: dependent from the swing foot
+        catalogue = []
+        y_direction = 1 if self.f_swg_id == 'Left' else -1
+        rot = get_z_rotation_matrix(self.f_sup[3])
+        for dx in PRIMITIVES_X:
+            for dy in PRIMITIVES_Y:
+                for dtheta in PRIMITIVES_THETA:
+                    delta = [ dx, y_direction*(dy + L), 0, y_direction*dtheta]
+                    delta[:-1] = rot.dot(delta[:-1])
+                    primitive = [ self.f_sup[0] + delta[0], self.f_sup[1] + delta[1], self.f_sup[2], self.f_sup[3] + delta[3]]
+                    catalogue.append(primitive)
+        return catalogue
+    
+    def get_new_pose(self):
+        if len(self.primitive_catalogue) == 0: return None
+        new_swing_foot = self.f_sup
+        new_support_foot = self.primitive_catalogue.pop(random.choice(range(len(self.primitive_catalogue))))
+        new_id = 'Right' if self.f_swg_id == 'Left' else 'Left'
+        return new_swing_foot, new_support_foot, new_id
 
 
 
@@ -84,7 +105,10 @@ def RRT(initial_Stance, goal_region, map, time_max):
                
         """ Step 2) Generating a candidate vertex"""
         # Now let's generate  a candidate vertex. we need a set U of primitives i.e. a set of landings for the swg foot with respect to the support foot. 
-        candidate_swg_f, candidate_sup_f, candidate_id = motion_primitive_selector(v_near) #candidate_id è il piede di swing del nodo candiate
+        # candidate_swg_f, candidate_sup_f, candidate_id = motion_primitive_selector(v_near) #candidate_id è il piede di swing del nodo candiate
+        selected_new_pose = v_near.get_new_pose()
+        if selected_new_pose == None: continue # TODO maybe is better to break
+        candidate_swg_f, candidate_sup_f, candidate_id = selected_new_pose
         candidate_sup_f[2] = assign_height(v_near.f_sup, candidate_sup_f, map)
         if candidate_sup_f[2] == None: continue
         # Before creating the vertex( a node) we need first to check R1 and R2 for candidate support foot
@@ -195,12 +219,13 @@ def v_near_selection(rrt_root, p_rand, z_range):
     queue = rrt_root.children.copy() 
     while len(queue):
         node = queue.pop(0)
+        for child in node.children:
+            queue.append(child)
+        if(len(node.primitive_catalogue) == 0): continue
         distance = node_to_point_distance(node, p_rand, z_range)
         if distance < best_distance:
             best_distance = distance
             v_near = node
-        for child in node.children:
-            queue.append(child)
             
     return best_distance, v_near 
 
@@ -260,7 +285,7 @@ def cost_of_a_node(vertex, candidate_parent, z_range): # TODO add an heuristic
 
 
 
-def motion_primitive_selector(node):
+def motion_primitive_selector(node): # TODO maybe remove. No more used
     """
     Set of primitives U: 20 possible swing foot landing w.r.t the actual support foot
     For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
