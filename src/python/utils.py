@@ -181,3 +181,55 @@ def retrieve_all_steps(node):
         for child in node.children:
             queue.append(child)
     return steps
+
+
+def save_tree_results_on_tsv(root, output_directory):
+    with open(output_directory + '/tree.tsv', 'w') as f:
+        labels = 'i\tf_sup\tf_swg\tf_swg_id\ttraj_params\th_max\n'
+        f.write(labels)
+        i = 0
+        queue = [root]
+        while len(queue):
+            node = queue.pop()
+            if not node.trajectory:
+                traj_params = None
+                h_max = None
+            else:
+                traj_params = node.trajectory[:-1]
+                h_max = node.trajectory[-1]
+            info = str(i) + '\t' + str(node.f_sup) + '\t' + str(node.f_swg) + '\t' + str(node.f_swg_id) + '\t' + str(traj_params) + '\t' + str(h_max) + '\n' 
+            f.write(info)            
+            i += 1
+            for child in node.children: queue.append(child)
+        
+
+def save_goal_results_on_tsv(node, output_directory):
+    with open(output_directory + '/plan.tsv', 'w') as f:
+        labels = 'i\tf_sup\tf_swg\tf_swg_id\ttraj_params\th_max\n'
+        f.write(labels)
+        nodes = []
+        while(node):
+            nodes.append(node)
+            node = node.parent
+        i = 0
+        while len(nodes):
+            node = nodes.pop()
+            if not node.trajectory:
+                traj_params = None
+                h_max = None
+            else:
+                traj_params = node.trajectory[:-1]
+                h_max = node.trajectory[-1]
+            info = str(i) + '\t' + str(node.f_sup) + '\t' + str(node.f_swg) + '\t' + str(node.f_swg_id) + '\t' + str(traj_params) + '\t' + str(h_max) + '\n' 
+            f.write(info)            
+            i += 1
+
+
+def get_number_of_nodes(root_node):
+    n = 0
+    queue = [root_node]
+    while len(queue): # finchè la coda non è vuota
+        node = queue.pop()
+        n += 1
+        for child in node.children: queue.append(child)
+    return n
