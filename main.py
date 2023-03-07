@@ -4,17 +4,26 @@ import os
 import numpy as np
 import argparse
 from pathlib import Path
+import datetime
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
 # Our imports
-from src.python.utils import json2dict, get_world_meshes, get_2d_rectangle_coordinates, get_2d_circle_coordinates
+from src.python.utils import json2dict, get_world_meshes, get_2d_rectangle_coordinates, get_2d_circle_coordinates, retrieve_steps, retrieve_all_steps, save_tree_results_on_tsv, save_goal_results_on_tsv, get_number_of_nodes
 from src.python.multi_level_surface_map import MultiLevelSurfaceMap
 from src.python.planner import RRT
 from src.python.parameters import *
 
 
-def main(world_json, resolution, time_max, print_steps, no_display_steps, no_out, out):
+def main(world_json, resolution, time_max, no_display, override):
+    run_info = {'world': world_json.stem, 'time_max': str(time_max), 'datetime': str(datetime.datetime.now()).split('.')[0].replace(' ', '_' ), 'resolution': resolution}
+    output_dir = 'outputs/' + run_info['world'] + '_' + run_info['time_max'] + '_' + run_info['datetime']
+    
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    else: # Just to be sure
+        print('The output directory already exists!')
+        return None
     fig = make_subplots(
         cols=2,
         specs=[[{"type": "scene"}, {"type": "scene"}]],
@@ -48,25 +57,31 @@ def main(world_json, resolution, time_max, print_steps, no_display_steps, no_out
         f_swg = [-2.2, 1.1, 0.000205, np.pi/2] 
         f_sup = [-2.4, 1.1, 0.000205, np.pi/2]
         goal_region = (-2.3, 10, 0.728, 0.5) # (x, y, z, radius)
-    elif(str(world_json) == 'data/tunnel.json'): # TODO correct initial configuration
+    elif(str(world_json) == 'data/tunnel.json'):
         f_swg = [3.3, 0.1, 0.000205, np.pi]
         f_sup = [3.3, -0.1, 0.000205, np.pi]
         goal_region = (-3.5, 0, 0.00205, 0.4) # (x, y, z, radius)
         # goal_region = [[-3.1, -0.5, 0.00205], [-4, -0.5, 0.00205],[-3.1, 0.4, 0.00205],[-4, 0.4, 0.00205]]  #tunnel map
-    elif(str(world_json) == 'data/tunnel2.json'): # TODO correct initial configuration
+    elif(str(world_json) == 'data/tunnel2.json'):
         f_swg = [3.3, 0.1, 0.000205, np.pi]
         f_sup = [3.3, -0.1, 0.000205, np.pi]
         goal_region = (-3.5, 0, 0.00205, 0.4) # (x, y, z, radius)
-    elif(str(world_json) == 'data/tunnel3.json'): # TODO correct initial configuration
+    elif(str(world_json) == 'data/tunnel3.json'):
         f_swg = [3.3, 0.1, 0.000205, np.pi]
         f_sup = [3.3, -0.1, 0.000205, np.pi]
         goal_region = (-3.5, 0, 0.00205, 0.4) # (x, y, z, radius)
+    elif(override):
+        f_swg = CUSTOM_INITIAL_F_SWG
+        f_sup = CUSTOM_INITIAL_F_SUP
+        goal_region = CUSTOM_GOAL_REGION
     else:
         print('Initial stance and goal region not specified!')
         display_results(fig, map)
         return
-    
     initial_stance = (f_swg, f_sup)
+    run_info['initial_f_sup'] = f_sup
+    run_info['initial_f_wg'] = f_swg
+    run_info['goal_region'] = goal_region
     
     # Draw the goal region:
     goal_vertices = get_2d_circle_coordinates((goal_region[0], goal_region[1]), goal_region[3])
@@ -77,24 +92,21 @@ def main(world_json, resolution, time_max, print_steps, no_display_steps, no_out
     fig.add_trace(goal_mesh, row=1, col=2)
 
     # Planning    
-    steps = RRT(initial_stance, goal_region, map, time_max)
+    rrt_root, goal_node = RRT(initial_stance, goal_region, map, time_max)
+    if not rrt_root: return None
+    nr_rrt_nodes = get_number_of_nodes(rrt_root)
+    run_info['nr_rrt_nodes'] = nr_rrt_nodes
+    print('Number of nodes: ', nr_rrt_nodes)
     
-    # Output file creation
-    if(not no_out):
-        f = open(out, 'w')
-        labels = 'NR\tswg_id\tpos_x\tpos:y\tpos_z\torientation\ttrajectory_params\n'
-        f.write(labels)
-            
+    # Save and rrt data as tsv
+    save_tree_results_on_tsv(rrt_root, output_dir)
+    save_goal_results_on_tsv(goal_node, output_dir) if goal_node else save_goal_results_on_tsv(rrt_root, output_dir)
+        
+    # Plan visualization:
+    steps = retrieve_steps(goal_node) if goal_node else retrieve_steps(rrt_root)
     for i, step in enumerate(steps):
         foot = step[0]
         foot_id = step[1]
-        traj_params = step[2]
-        if(print_steps): print('Footprint '+ str(i) +':\t', foot, '\t', foot_id)
-        # Steps info in output file:
-        if(not no_out and i not in [0,1]):
-            info = str(i-1) + '\t' + foot_id + '\t' + str(foot[0]) + '\t' + str(foot[1]) + '\t' + str(foot[2]) + '\t' + str(foot[3]) + '\t' + str(traj_params) + '\n' 
-            f.write(info)
-        # Steps visualization:
         vertices = get_2d_rectangle_coordinates((foot[0],foot[1]), ROBOT_FOOT_SIZE, foot[3])
         x = vertices[:,0]
         y = vertices[:,1]
@@ -106,11 +118,13 @@ def main(world_json, resolution, time_max, print_steps, no_display_steps, no_out
         footprint_mesh = go.Mesh3d(name=footprint_name, x=x, y=y, z=z, color=footprint_color)
         fig.add_trace(footprint_mesh, row=1, col=2)
     
-    # Show footsteps 
-    if not no_display_steps: display_results(fig, map)
+    # Save info about the run
+    with open(output_dir + '/run_info.txt', 'w') as f:
+        for item in run_info.items():
+            f.write(item[0] + ':\t' + str(item[1]) + '\n')
     
-    if(not no_out): f.close()
-        
+    # Display
+    if not no_display: display_results(fig, map)             
 
 
 def display_results(fig, map):
@@ -129,10 +143,8 @@ def parse_opt():
     parser.add_argument('--world-json', type=Path, default='data/world_of_stairs2.json', help='json file containing the information about the boxes contained in the world')
     parser.add_argument('--resolution', type=float, default=MLSM_RESOLUTION, help='Set the map resolution')
     parser.add_argument('--time-max', type=int, default=500, help='Set the map resolution')
-    parser.add_argument('--print-steps', action='store_true', help='Print the returned steps information on the terminal')
-    parser.add_argument('--no-display-steps', action='store_true', help='Do not show the returned steps information in a 3D scene')
-    parser.add_argument('--no-out', action='store_true', help='Don\'t save the final output in a file.')
-    parser.add_argument('--out', type=Path, default='outputs/out.tsv', help='Path to the tsv file where to store the output.')
+    parser.add_argument('--no-display', action='store_true', help='Do not show the returned steps information in a 3D scene')
+    parser.add_argument('--override', action='store_true', help='Specify directly [IN PARAMETERS.PY, lines 2,3,4] the initial pose and the goal region.')
     opt = parser.parse_args()
     return opt
 

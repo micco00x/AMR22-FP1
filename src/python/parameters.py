@@ -1,4 +1,9 @@
 
+CUSTOM_INITIAL_F_SWG = [] ### Insert custom values HERE (x, y, z, orientation) ###
+CUSTOM_INITIAL_F_SUP = [] ### Insert custom values HERE (x, y, z, orientation) ###
+CUSTOM_GOAL_REGION   = () ### Insert custom values HERE (x, y, z, radius))     ###
+
+
 ROBOT_FOOT_SIZE = (0.24, 0.14) # (m, m)
 HEIGHT_ROBOT = 1.5
 ZB = 0.4
