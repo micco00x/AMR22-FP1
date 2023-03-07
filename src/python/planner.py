@@ -5,7 +5,7 @@ import random
 import math
 from tqdm import tqdm
 
-from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d, retrieve_steps, retrieve_all_steps
+from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d, retrieve_steps, retrieve_all_steps, get_number_of_nodes
 from src.python.parameters import *
 
 """
@@ -80,7 +80,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
     
     if not r2_feasibility(rrt_root.f_sup, rrt_root.f_swg, rrt_root.f_swg_id):
         print('Initial stance NOT feasible!\n')
-        return []
+        return (None, None)
             
     if goal_check(rrt_root, goal_region):
         print('Already in the goal region! No steps needed')
@@ -98,7 +98,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
             z_rand = random.random()*abs(z_range[1] - z_range[0]) + z_range[0] # 1.5m added on top and at the bottom to have a better distribution
             p_rand = [x_rand, y_rand, z_rand] # random point in (x,y,z)
         
-        distance, v_near = v_near_selection(rrt_root, p_rand, z_range) 
+        distance, v_near = v_near_selection(rrt_root, p_rand) 
         #v_near = rrt_root if i==0 or not v_candidate else v_candidate
         #print('BEST_DISTANCE:',distance)
         
@@ -170,25 +170,26 @@ def RRT(initial_Stance, goal_region, map, time_max):
         # # rewiring(v_candidate, rrt_root, map, z_range)
                       
     print('\n### End RRT search ###')
-
     try:
         best_goal_node = min(goal_nodes, key=lambda goal_node: goal_node.cost)
     except: # Goal_nodes is an empty list
         print('Path to the goal NOT FOUND!\n')
-        return retrieve_all_steps(rrt_root)
+        # return retrieve_all_steps(rrt_root)
+        return (rrt_root, None)
     print('Path to the goal FOUND!\n')
-    return retrieve_steps(best_goal_node)
+    # return retrieve_steps(best_goal_node)
+    return (rrt_root, best_goal_node)
 
 
 def goal_check(node, goal):
     if abs(goal[2] - node.f_sup[2]) < 0.01:
         distance_to_goal = goal[3] - math.sqrt( (goal[0] - node.f_sup[0])**2 + (goal[1] - node.f_sup[1])**2 )
         if distance_to_goal >= 0: return True
-    return False # Result is in MAP COORDS            
+    return False
 
 
-def v_near_selection(rrt_root, p_rand, z_range):
-    best_distance = node_to_point_distance(rrt_root, p_rand, z_range)
+def v_near_selection(rrt_root, p_rand):
+    best_distance = node_to_point_distance(rrt_root, p_rand)
     v_near = rrt_root
     
     # BFS on the RRT tree
@@ -198,7 +199,7 @@ def v_near_selection(rrt_root, p_rand, z_range):
         for child in node.children:
             queue.append(child)
         if(len(node.primitive_catalogue) == 0): continue
-        distance = node_to_point_distance(node, p_rand, z_range)
+        distance = node_to_point_distance(node, p_rand)
         if distance < best_distance:
             best_distance = distance
             v_near = node
@@ -206,22 +207,13 @@ def v_near_selection(rrt_root, p_rand, z_range):
     return best_distance, v_near 
 
 
-def node_to_point_distance(node, point, z_range):
-    # if point[2] > 1:
-    #     f = 1
-    # else:
-    #     f = -1
+def node_to_point_distance(node, point):
     mid_point = np.array([(node.f_swg[0] + node.f_sup[0])/2, (node.f_swg[1] + node.f_sup[1])/2, (node.f_swg[2] + node.f_sup[2])/2])
     saggital_axis = np.array((node.f_swg[3] + node.f_sup[3]) / 2)
     joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1]), (point[2] - mid_point[2])])
     phi = np.arctan2(joining_vector[1], joining_vector[0])
-    # mean_height = np.array([(node.f_swg[2] + node.f_sup[2]) / 2],  dtype=np.float64) #altezza media del nodo
-    # if f == 1: # second floor
-    #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[1] - mean_height)) # When the node is at the second floor, this malus is zero
-    # if f == -1: # ground floor
-    #     distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi) + 1000*norm((z_range[0] - mean_height)) #When the node is ate groudn floor. this malus is zero
     distance = norm((mid_point - point)) + K_MU*abs(saggital_axis - phi) + K_HEIGHT*(point[2] - mid_point[2]) 
-    # distance = norm((mid_point - point)) + k_mu*abs(saggital_axis - phi)  # original cost function
+    # distance = norm((mid_point - point)) + K_MU*abs(saggital_axis - phi)  # original cost function
     return distance # Result is in FOOT COORDS
 
 
@@ -232,8 +224,8 @@ def footstep_to_footstep_distance_metric(f1, f2, k_gamma = K_GAMMA):
     return metric # Result is in FOOT COORDS
 
 
-def neighborhood(vertex, tree_root, r_neigh = 2): # TODO check this part: maybe it considers all the leaf nodes as neighbour
-    # Returns a list containing all the nodes of the tree in that have a footstep_to_footstep metric < r_neigh w.r.t VERTEX
+def neighborhood(vertex, tree_root, r_neigh = 2):
+    '''Returns a list containing all the nodes of the tree in that have a footstep_to_footstep metric < r_neigh w.r.t VERTEX'''
     neighbors = []
     if len(tree_root.children) == 0:
         metric = footstep_to_footstep_distance_metric(vertex.f_sup, tree_root.f_sup)
