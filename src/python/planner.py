@@ -5,7 +5,7 @@ import random
 import math
 from tqdm import tqdm
 
-from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d
+from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d, retrieve_steps, retrieve_all_steps
 from src.python.parameters import *
 
 """
