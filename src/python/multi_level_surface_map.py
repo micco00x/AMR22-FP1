@@ -94,37 +94,30 @@ class MultiLevelSurfaceMap():
         '''Returns the map as numpy array.
         If you want to decrease the resolution of the map change the stride to an higher value.'''
         assert stride >= 1
-        x = []
-        y = []
-        z = []
+        x, y, z, depth = [], [], [], []
         for i in range(0, self.discrete_size[0], stride):
             for j in range(0, self.discrete_size[1], stride):
                 if (self.mlsm[i][j]):
                     for level in self.mlsm[i][j]:
                         x.append(i*self.resolution + self.world_dimensions[0][0])
                         y.append(j*self.resolution + self.world_dimensions[1][0])
-                        z.append(level[0]) # TODO consider depth (level[1])
+                        z.append(level[0])
+                        depth.append(level[1])
         x = np.array(x, dtype=np.float64)
         y = np.array(y, dtype=np.float64)
         z = np.array(z, dtype=np.float64)
-        return (x, y, z)
+        depth = np.array(depth, dtype=np.float64)
+        return (x, y, z, depth)
     
     
     def as_showable(self):
-        x, y, z = self.as_numpy(stride=5)
-        showable = go.Scatter3d(
-        x=x,
-        y=y,
-        z=z,
-        mode='markers',
-        marker=dict(
-            size=7,#0.02/map.resolution,
-            color=z,                # set color to an array/list of desired values
-            colorscale='Viridis',   # choose a colorscale
-            # opacity=0.9
-            )
-        )
-        return showable
+        x, y, z, depth = self.as_numpy(stride=5)
+        scatter = go.Scatter3d( x=x, y=y, z=z, mode='markers', marker=dict(size = 1, color = z, colorscale='Viridis') )
+        lines = []
+        for i in range(len(depth)):
+            if depth[i] < 0.01: continue
+            lines.append(go.Scatter3d( x=[x[i],x[i]], y=[y[i],y[i]], z=[z[i],z[i]-depth[i]], mode='lines', marker=dict(size = 1, color = z, colorscale='Viridis') ))
+        return (scatter, lines)
     
     
     def plot(self):

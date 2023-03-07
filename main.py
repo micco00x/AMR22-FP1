@@ -14,6 +14,7 @@ from src.python.multi_level_surface_map import MultiLevelSurfaceMap
 from src.python.planner import RRT
 from src.python.parameters import *
 
+# import plotly.express as px
 
 def main(world_json, resolution, time_max, no_display, override):
     run_info = {'world': world_json.stem, 'time_max': str(time_max), 'datetime': str(datetime.datetime.now()).split('.')[0].replace(' ', '_' ), 'resolution': resolution}
@@ -24,21 +25,27 @@ def main(world_json, resolution, time_max, no_display, override):
     else: # Just to be sure
         print('The output directory already exists!')
         return None
+    
     fig = make_subplots(
-        cols=2,
-        specs=[[{"type": "scene"}, {"type": "scene"}]],
-        column_widths=[0.4, 0.6]
+        cols = 2,
+        rows = 2,
+        column_widths=[0.5, 0.5],
+        row_heights=[0.5, 0.5],
+        vertical_spacing=0.01,
+        horizontal_spacing=0.01,
+        specs=[[{"type": "scene"}, {"type": "scene", 'rowspan': 2}],
+               [{"type": "scene"}, None]]
     )
 
     # MultiLevelSurfaceMap
     map = MultiLevelSurfaceMap(world_json, resolution)
-    fig.add_trace(map.as_showable(), row=1, col=1)
     
     # World of stairs
     scene = json2dict(world_json)['boxes']
     world_meshes = get_world_meshes(scene)
     for mesh in world_meshes:
         fig.add_trace(mesh, row=1, col=2)
+        fig.add_trace(mesh, row=2, col=1)
     
     # Define initial stance and goal region
     if(str(world_json) == 'data/world_of_stairs.json'):
@@ -76,7 +83,6 @@ def main(world_json, resolution, time_max, no_display, override):
         goal_region = CUSTOM_GOAL_REGION
     else:
         print('Initial stance and goal region not specified!')
-        display_results(fig, map)
         return
     initial_stance = (f_swg, f_sup)
     run_info['initial_f_sup'] = f_sup
@@ -101,7 +107,23 @@ def main(world_json, resolution, time_max, no_display, override):
     # Save and rrt data as tsv
     save_tree_results_on_tsv(rrt_root, output_dir)
     save_goal_results_on_tsv(goal_node, output_dir) if goal_node else save_goal_results_on_tsv(rrt_root, output_dir)
-        
+    
+    # Save info about the run
+    with open(output_dir + '/run_info.txt', 'w') as f:
+        for item in run_info.items():
+            f.write(item[0] + ':\t' + str(item[1]) + '\n')
+            
+    # MLSM visualization
+    map_showable = map.as_showable()
+    fig.add_trace(map_showable[0], row=1, col=1)
+    for line in map_showable[1]: fig.add_trace(line, row=1, col=1)
+    
+    # RRT visualization
+    rrt_showable = rrt_root.as_showable()
+    fig.add_trace(rrt_showable[0], row=2, col=1)
+    for line in rrt_showable[1]: fig.add_trace(line, row=2, col=1)
+    
+    
     # Plan visualization:
     steps = retrieve_steps(goal_node) if goal_node else retrieve_steps(rrt_root)
     for i, step in enumerate(steps):
@@ -118,24 +140,26 @@ def main(world_json, resolution, time_max, no_display, override):
         footprint_mesh = go.Mesh3d(name=footprint_name, x=x, y=y, z=z, color=footprint_color)
         fig.add_trace(footprint_mesh, row=1, col=2)
     
-    # Save info about the run
-    with open(output_dir + '/run_info.txt', 'w') as f:
-        for item in run_info.items():
-            f.write(item[0] + ':\t' + str(item[1]) + '\n')
+    # Save the interactive plot
+    fig = update_figure_layout(fig, map)             
+    fig.write_html(output_dir + '/plot.html')
     
     # Display
-    if not no_display: display_results(fig, map)             
+    if not no_display: fig.show()
 
 
-def display_results(fig, map):
+
+def update_figure_layout(fig, map):
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), showlegend=False)
     visualization_range = [min(map.world_dimensions[0][0], map.world_dimensions[1][0], map.world_dimensions[2][0]), max(map.world_dimensions[0][1], map.world_dimensions[1][1], map.world_dimensions[2][1])+map.resolution]
     nticks = int(visualization_range[1] - visualization_range[0])*2
     fig.update_layout(scene = dict(xaxis = dict(nticks=nticks, range=visualization_range), yaxis = dict(nticks=nticks, range=visualization_range), zaxis = dict(nticks=nticks, range=visualization_range)))
     fig.update_layout(scene2 = dict(xaxis = dict(nticks=nticks, range=visualization_range), yaxis = dict(nticks=nticks, range=visualization_range), zaxis = dict(nticks=nticks, range=visualization_range)))
+    fig.update_layout(scene3 = dict(xaxis = dict(nticks=nticks, range=visualization_range), yaxis = dict(nticks=nticks, range=visualization_range), zaxis = dict(nticks=nticks, range=visualization_range)))
     fig.update_layout(scene_aspectmode='cube')
     fig.update_layout(scene2_aspectmode='cube')
-    fig.show()
+    fig.update_layout(scene3_aspectmode='cube')
+    return fig
 
 
 def parse_opt():

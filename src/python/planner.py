@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d, retrieve_steps, retrieve_all_steps, get_number_of_nodes
 from src.python.parameters import *
+import plotly.graph_objects as go
 
 """
 Stance = (f_swing, f_support)
@@ -68,6 +69,24 @@ class Node():
         return new_swing_foot, new_support_foot, new_id
 
 
+    def as_showable(self):
+        '''Return all the tree that has the node as root in a plottable format.'''
+        x, y, z, = [], [], []
+        lines = []
+        queue = [self]
+        while len(queue):
+            node = queue.pop(0)
+            midpoint = ( (node.f_sup[0]+node.f_swg[0])/2, (node.f_sup[1]+node.f_swg[1])/2, (node.f_sup[2]+node.f_swg[2])/2 )
+            x.append( midpoint[0] )
+            y.append( midpoint[1] )
+            z.append( midpoint[2] )
+            if node.parent:
+                parent_midpoint = ( (node.parent.f_sup[0]+node.parent.f_swg[0])/2, (node.parent.f_sup[1]+node.parent.f_swg[1])/2, (node.parent.f_sup[2]+node.parent.f_swg[2])/2 )
+                lines.append(go.Scatter3d( x=[midpoint[0],parent_midpoint[0]], y=[midpoint[1],parent_midpoint[1]], z=[midpoint[2],parent_midpoint[2]], mode='lines', marker=dict(size = 1, color = z, colorscale='Viridis') ))
+            for child in node.children: queue.append(child)
+        scatter = go.Scatter3d( x=x, y=y, z=z, mode='markers', marker=dict( size = 1.2, color=z, colorscale='Viridis' ) )
+        return (scatter, lines)
+            
 
 def RRT(initial_Stance, goal_region, map, time_max):
     """
@@ -80,11 +99,11 @@ def RRT(initial_Stance, goal_region, map, time_max):
     
     if not r2_feasibility(rrt_root.f_sup, rrt_root.f_swg, rrt_root.f_swg_id):
         print('Initial stance NOT feasible!\n')
-        return (None, None)
+        return (rrt_root, None)
             
     if goal_check(rrt_root, goal_region):
         print('Already in the goal region! No steps needed')
-        return retrieve_all_steps(rrt_root)
+        return (rrt_root, rrt_root)
     
     goal_nodes = []
     v_candidate = None
