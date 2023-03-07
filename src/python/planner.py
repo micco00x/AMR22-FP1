@@ -393,22 +393,22 @@ def r2_feasibility( f_prev, f_actual, swg_id):
     #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
 
     if ((xy[0] < -DELTA_X_NEG) or (xy[0] > DELTA_X_POS)):
-        print('X fail, difference is',xy[0], '\n')
+        # print('X fail, difference is',xy[0], '\n')
         return False
     
     if swg_id == 'Left' and ((xy[1] < L - DELTA_Y_NEG) or (xy[1] > L + DELTA_Y_POS)):
-        print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
+        # print("Y_ERROR_Left pos: ", L - DELTA_Y_NEG, '#', xy[1], '#', L + DELTA_Y_POS,'\n')
         return False
     elif swg_id == 'Right' and ((xy[1] > -L + DELTA_Y_NEG) or (xy[1] < -L - DELTA_Y_POS)):
-        print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
+        # print("Y_ERROR_Right pos: ", -L + DELTA_Y_NEG, '#', xy[1], '#', -L - DELTA_Y_POS,'\n')
         return False
     
     if ((z < -DELTA_Z_NEG) or (z > DELTA_Z_POS)):
-        print("z_ERROR: ", z, '\n')
+        # print("z_ERROR: ", z, '\n')
         return False
     
     if ((theta < -DELTA_THETA_NEG) or (theta > DELTA_THETA_POS )):
-        print("THETA_ERROR: ", theta, '\n')
+        # print("THETA_ERROR: ", theta, '\n')
         return False
     return True
 
@@ -475,7 +475,7 @@ def generate_trajectory(f_prev, f_current, map):
         a_par = 2 * ((f_current[2]-f_prev[2]) - (2 * h_max_set)) / (distance)**2
         b_par = ((4 * h_max_set) - (f_current[2]-f_prev[2])) / distance
 
-        trajectory_params = [a_par, b_par]
+        trajectory_params = [a_par, b_par, h_max_set]
 
         collision = False
         interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
