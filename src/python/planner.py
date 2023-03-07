@@ -90,7 +90,7 @@ def RRT(initial_Stance, goal_region, map, time_max):
     v_candidate = None
     for i in tqdm(range(time_max)):
         """ Step 1) Selecting a vertex for expansion"""
-        if i % 10 == 0:
+        if random.random() < 0.05: # Select the center of the Goal region as p_rand with a probability of 5%
             p_rand = goal_region[:-1]
         else:
             x_rand = random.random()*abs(x_range[1] - x_range[0]) + x_range[0]
