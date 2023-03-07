@@ -180,30 +180,6 @@ def RRT(initial_Stance, goal_region, map, time_max):
     return retrieve_steps(best_goal_node)
 
 
-def retrieve_steps(node):
-    '''Start from a node of the tree. Returns all the steps to reach the node from the root of the tree ## In the returned list there are also the footprints of the initial stance.'''
-    # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
-    steps=[]
-    while(node.parent):
-        steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory))
-        node = node.parent
-    steps.insert(0, (node.f_swg, node.f_swg_id, node.trajectory))
-    steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory))
-    return steps
-
-
-def retrieve_all_steps(node):
-    # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
-    steps = [(node.f_swg, node.f_swg_id, node.trajectory)]
-    queue = [node]
-    while len(queue): # finchè la coda non è vuota
-        node = queue.pop()
-        steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory) )
-        for child in node.children:
-            queue.append(child)
-    return steps
-
-
 def goal_check(node, goal):
     if abs(goal[2] - node.f_sup[2]) < 0.01:
         distance_to_goal = goal[3] - math.sqrt( (goal[0] - node.f_sup[0])**2 + (goal[1] - node.f_sup[1])**2 )
