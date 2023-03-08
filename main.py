@@ -45,6 +45,7 @@ def main(world_json, resolution, time_max, no_display, override):
     world_meshes = get_world_meshes(scene)
     for mesh in world_meshes:
         fig.add_trace(mesh, row=1, col=2)
+        mesh.opacity = 0.3
         fig.add_trace(mesh, row=2, col=1)
     
     # Define initial stance and goal region
@@ -121,7 +122,7 @@ def main(world_json, resolution, time_max, no_display, override):
     # RRT visualization
     rrt_showable = rrt_root.as_showable()
     fig.add_trace(rrt_showable[0], row=2, col=1)
-    for line in rrt_showable[1]: fig.add_trace(line, row=2, col=1)
+    # for line in rrt_showable[1]: fig.add_trace(line, row=2, col=1)
     
     
     # Plan visualization:
