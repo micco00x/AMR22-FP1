@@ -122,7 +122,7 @@ def main(world_json, resolution, time_max, no_display, override):
     # RRT visualization
     rrt_showable = rrt_root.as_showable()
     fig.add_trace(rrt_showable[0], row=2, col=1)
-    # for line in rrt_showable[1]: fig.add_trace(line, row=2, col=1)
+    for line in rrt_showable[1]: fig.add_trace(line, row=2, col=1)
     
     
     # Plan visualization:

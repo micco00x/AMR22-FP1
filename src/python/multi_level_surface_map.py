@@ -111,7 +111,7 @@ class MultiLevelSurfaceMap():
     
     
     def as_showable(self):
-        x, y, z, depth = self.as_numpy(stride=5)
+        x, y, z, depth = self.as_numpy(stride=10)
         scatter = go.Scatter3d( x=x, y=y, z=z, mode='markers', marker=dict(size = 1, color = z, colorscale='Viridis') )
         lines = []
         for i in range(len(depth)):
