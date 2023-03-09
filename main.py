@@ -124,7 +124,6 @@ def main(world_json, resolution, time_max, no_display, override):
     fig.add_trace(rrt_showable[0], row=2, col=1)
     # for line in rrt_showable[1]: fig.add_trace(line, row=2, col=1)
     
-    
     # Plan visualization:
     steps = retrieve_steps(goal_node) if goal_node else retrieve_steps(rrt_root)
     for i, step in enumerate(steps):
@@ -143,7 +142,9 @@ def main(world_json, resolution, time_max, no_display, override):
     
     # Save the interactive plot
     fig = update_figure_layout(fig, map)             
+    print('Saving the plot...')
     fig.write_html(output_dir + '/plot.html')
+    print('Done!')
     
     # Display
     if not no_display: fig.show()
