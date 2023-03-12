@@ -5,7 +5,7 @@ import random
 import math
 from tqdm import tqdm
 
-from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d, retrieve_steps, retrieve_all_steps, get_number_of_nodes
+from src.python.utils import get_2d_rectangle_coordinates, get_z_rotation_matrix, get_z_rotation_matrix_2d, wrap_angle, retrieve_steps, retrieve_all_steps, get_number_of_nodes
 from src.python.parameters import *
 import plotly.graph_objects as go
 
@@ -226,13 +226,15 @@ def v_near_selection(rrt_root, p_rand):
     return best_distance, v_near 
 
 
+
+
+
 def node_to_point_distance(node, point):
     mid_point = np.array([(node.f_swg[0] + node.f_sup[0])/2, (node.f_swg[1] + node.f_sup[1])/2, (node.f_swg[2] + node.f_sup[2])/2])
     saggital_axis = np.array((node.f_swg[3] + node.f_sup[3]) / 2)
     joining_vector =np.array([(point[0] - mid_point[0]), (point[1] - mid_point[1]), (point[2] - mid_point[2])])
     phi = np.arctan2(joining_vector[1], joining_vector[0])
-    distance = norm((mid_point - point)) + K_MU*abs(saggital_axis - phi) + K_HEIGHT*(point[2] - mid_point[2]) 
-    # distance = norm((mid_point - point)) + K_MU*abs(saggital_axis - phi)  # original cost function
+    distance = norm((mid_point - point)) + K_MU*abs(wrap_angle(saggital_axis - phi))  # TODO Add a weight on the z value of the norm
     return distance # Result is in FOOT COORDS
 
 
@@ -346,7 +348,7 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
         cell = map.query(ver[0], ver[1])
         if cell == None or not map.check_collision(x, y, z): 
             return False
-        if any( (obj[0] == z) for obj in cell ) and map.check_collision(ver[0], ver[1], z):
+        if any( abs(obj[0]-z) < 0.001 for obj in cell ) and map.check_collision(ver[0], ver[1], z): 
             continue
         else:
             return False
@@ -437,14 +439,15 @@ def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual
 
     #FOOT TRAJECTORY CHECK
     return generate_trajectory(f_prev, f_actual, map)
+    # return [0,0,0] # Added to test if generate_trajectory works well (It doesn't for the moment)
 
 
 
 
 
-def generate_trajectory(f_prev, f_current, map):
-    h_min = 0.02 #minimum height for the step (iperparametro da definire) [5 cm = ?]
-    h_max = 0.24 #maximum height for the step (iperparametro da definire) [30 cm = ?]
+def generate_trajectory(f_prev, f_current, map): # TODO To be fixed
+    h_min = H_MIN #minimum height for the step (iperparametro da definire) [5 cm = ?]
+    h_max = H_MAX #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
     #calcolate ipotenusa
     distance = math.sqrt(((f_current[0]-f_prev[0])**2) + ((f_current[1]-f_prev[1])**2))
