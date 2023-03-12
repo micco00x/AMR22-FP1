@@ -2,6 +2,7 @@ import json
 from math import cos, sin
 import numpy as np
 import plotly.graph_objects as go
+import math
 
 def json2dict(json_file):
     dict = {}
@@ -233,3 +234,7 @@ def get_number_of_nodes(root_node):
         n += 1
         for child in node.children: queue.append(child)
     return n
+
+# Wrap angle to [-pi, pi):
+def wrap_angle(theta):
+    return math.atan2(math.sin(theta), math.cos(theta))
