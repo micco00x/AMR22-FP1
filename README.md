@@ -29,3 +29,9 @@ To launch the planner with default settings:
 - **world**: path to the json containing all the info about the objects in the scene
 - **time-max**: number of iterations of the RRT
 - **resolution**: size for the world discretization
+
+## Convert footstep plan
+To convert the `.tsv` footstep plan in order to be published as ROS topic:
+```bash
+./convert-tsv-footstep-plan.py --input TSV_FILE_PATH --output TXT_FILE_PATH
+```
