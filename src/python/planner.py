@@ -449,51 +449,38 @@ def generate_trajectory(f_prev, f_current, map): # TODO To be fixed
     h_min = H_MIN #minimum height for the step (iperparametro da definire) [5 cm = ?]
     h_max = H_MAX #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
-    #calcolate ipotenusa
+    interval = np.linspace(0, 1, num=5, endpoint=True) #num = number of value to generate in the interval
     distance = math.sqrt(((f_current[0]-f_prev[0])**2) + ((f_current[1]-f_prev[1])**2))
+
     if not distance:
-        return [0, 0] #
-    #generate trajectory with all h feasible until one is acceptable
-    interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
-    theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
-    rotation_matrix = get_z_rotation_matrix_2d(theta)
-    for h_max_set in np.linspace(h_min, h_max, 6, endpoint= True):
+        return [0]
+    
+    for h in np.linspace(h_min, h_max, 6, endpoint= True):
         #check if it can exists
-        if h_max_set + f_prev[2] < f_current[2]:
+        if h + f_prev[2] < f_current[2]:
             continue
 
-        a_par = 2 * ((f_current[2]-f_prev[2]) - (2 * h_max_set)) / (distance)**2
-        b_par = ((4 * h_max_set) - (f_current[2]-f_prev[2])) / distance
-
-        trajectory_params = [a_par, b_par, h_max_set]
-
+        c = f_prev[2]
+        b = (5 * f_prev[2]) + (4 * h) - f_current[2]
+        a = f_current[2] - f_prev[2] - b
+        foot_size = [0.26, 0.15]
         collision = False
-        interval = np.linspace(0, distance, num=5, endpoint=True) #num = number of value to generate in the interval
-        theta = math.atan2((f_current[1]-f_prev[1]), (f_current[0]-f_prev[0])) #angle to calcolate x,y on 3d world
-        rotation_matrix = get_z_rotation_matrix_2d(theta)
-        for delta in interval:
-            #reconstruction  of the 3d coordinates
-            z = trajectory_params[0] * delta**2 + trajectory_params[1]* delta + f_prev[2]
-            delta = np.array([delta * math.cos(theta), delta * math.sin(theta)], dtype=np.float64)
-            #delta = rotation_matrix.dot(delta) + f_prev[:1]
-            delta = delta + f_prev[:1]
-            x = delta[0] + f_prev[0]
-            y = delta[1] + f_prev[1]
+        for s in interval:
+            x_s = f_prev[0] + (f_current[0] - f_prev[0]) * s
+            y_s = f_prev[1] + (f_current[1] - f_prev[1]) * s
+            theta_s = wrap_angle(f_prev[3] + (f_current[3] - f_prev[3]) * s)
+            z_s = (a * (s)**2) + (b * s) + c
 
-            #check dimension foot
-            #orientation of the foot (?)
-            foot_size = [0.26, 0.15]
-            for vertex in get_2d_rectangle_coordinates([x,y], foot_size, f_prev[3]):
-                if (not (map.check_collision(vertex[0], vertex[1], z))):
+            for vertex in get_2d_rectangle_coordinates([x_s,y_s], foot_size, theta_s):
+                if (not (map.check_collision(vertex[0], vertex[1], z_s))):
                     collision = True
                     break
             if collision:
-                #print("ERRRORRRRRRR")
-                trajectory_params = None
                 break
-        if collision: continue
-
-    return trajectory_params #doesn't exist any feasible trajectory
+        if not collision:
+            return [h]
+    
+    return None
 
 
 
