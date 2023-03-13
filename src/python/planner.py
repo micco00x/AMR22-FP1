@@ -453,7 +453,7 @@ def generate_trajectory(f_prev, f_current, map): # TODO To be fixed
     distance = math.sqrt(((f_current[0]-f_prev[0])**2) + ((f_current[1]-f_prev[1])**2))
 
     if not distance:
-        return [0]
+        return [h_min]
     
     for h in np.linspace(h_min, h_max, 6, endpoint= True):
         #check if it can exists
