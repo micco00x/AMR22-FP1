@@ -19,7 +19,7 @@ if __name__ == '__main__':
         with open(footstep_plan_tsv_file_path, 'r') as footstep_plan_tsv_file:
             footstep_plan_tsv_file.readline()
             for l in footstep_plan_tsv_file.readlines():
-                idx, q_supp, q_swg, support_foot, traj_params, h_max = l.rstrip().split('\t')
+                idx, q_supp, q_swg, support_foot, h_max = l.rstrip().split('\t')
                 qL = q_supp if support_foot == 'Left' else q_swg
                 qR = q_supp if support_foot == 'Right' else q_swg
                 v = []
