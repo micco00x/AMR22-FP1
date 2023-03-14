@@ -27,14 +27,14 @@ class Node():
     """
     Each node v of the tree is a stance v = (f_swg, f_sup)
     """
-    def __init__(self, f_swg, f_sup, f_swg_id = None, cost = 0, parent = None, trajectory = []):
+    def __init__(self, f_swg, f_sup, f_swg_id = None, cost = 0, parent = None, traj_h = None):
         self.f_swg = f_swg
         self.f_sup = f_sup
         self.parent = parent
         self.children = []
         self.cost = cost
         self.f_swg_id = f_swg_id # It always starts by moving right foot first
-        self.trajectory = trajectory # Trajectory is the trajectory that , starting from the parent, brings to the actual node
+        self.traj_h = traj_h # Trajectory is the trajectory that , starting from the parent, brings to the actual node
         self.primitive_catalogue = self.build_primitive_catalogue()
     
     def __eq__(self, other):
@@ -139,12 +139,12 @@ def RRT(initial_Stance, goal_region, map, time_max):
         if not r2_feasibility(v_near.f_sup, candidate_sup_f, v_near.f_swg_id): # Redundant check. It has to be guaranteed by the primitive selection.
             print('R2 Fail: Check primitive selection!')
             continue
-        candidate_trajectory = r3_feasibility(v_near.f_swg, candidate_sup_f, map)
-        if not candidate_trajectory:
+        candidate_trajectory_height = r3_feasibility(v_near.f_swg, candidate_sup_f, map)
+        if not candidate_trajectory_height:
             # print('r3:check fail')
             continue
         
-        v_candidate = Node(candidate_swg_f, candidate_sup_f, f_swg_id=candidate_id, trajectory=candidate_trajectory)
+        v_candidate = Node(candidate_swg_f, candidate_sup_f, f_swg_id=candidate_id, traj_h=candidate_trajectory_height)
         v_candidate.parent = v_near
         v_near.children.append(v_candidate)
 
@@ -478,7 +478,7 @@ def generate_trajectory(f_prev, f_current, map): # TODO To be fixed
             if collision:
                 break
         if not collision:
-            return [h]
+            return h
     
     return None
 

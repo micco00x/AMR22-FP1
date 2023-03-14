@@ -165,20 +165,20 @@ def retrieve_steps(node):
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
     steps=[]
     while(node.parent):
-        steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory))
+        steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.traj_h))
         node = node.parent
-    steps.insert(0, (node.f_swg, node.f_swg_id, node.trajectory))
-    steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory))
+    steps.insert(0, (node.f_swg, node.f_swg_id, node.traj_h))
+    steps.insert(0, (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.traj_h))
     return steps
 
 
 def retrieve_all_steps(node):
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
-    steps = [(node.f_swg, node.f_swg_id, node.trajectory)]
+    steps = [(node.f_swg, node.f_swg_id, node.traj_h)]
     queue = [node]
     while len(queue): # finchè la coda non è vuota
         node = queue.pop()
-        steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.trajectory) )
+        steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.traj_h) )
         for child in node.children:
             queue.append(child)
     return steps
@@ -186,19 +186,13 @@ def retrieve_all_steps(node):
 
 def save_tree_results_on_tsv(root, output_directory):
     with open(output_directory + '/tree.tsv', 'w') as f:
-        labels = 'i\tf_sup\tf_swg\tf_swg_id\ttraj_params\th_max\n'
+        labels = 'i\tf_sup\tf_swg\tf_swg_id\ttraj_h\n'
         f.write(labels)
         i = 0
         queue = [root]
         while len(queue):
             node = queue.pop()
-            if not node.trajectory:
-                traj_params = None
-                h_max = None
-            else:
-                traj_params = node.trajectory[:-1]
-                h_max = node.trajectory[-1]
-            info = str(i) + '\t' + str(node.f_sup) + '\t' + str(node.f_swg) + '\t' + str(node.f_swg_id) + '\t' + str(traj_params) + '\t' + str(h_max) + '\n' 
+            info = str(i) + '\t' + str(node.f_sup) + '\t' + str(node.f_swg) + '\t' + str(node.f_swg_id) + '\t' + str(node.traj_h) + '\n' 
             f.write(info)            
             i += 1
             for child in node.children: queue.append(child)
@@ -215,13 +209,7 @@ def save_goal_results_on_tsv(node, output_directory):
         i = 0
         while len(nodes):
             node = nodes.pop()
-            if not node.trajectory:
-                traj_params = None
-                h_max = None
-            else:
-                traj_params = node.trajectory[:-1]
-                h_max = node.trajectory[-1]
-            info = str(i) + '\t' + str(node.f_sup) + '\t' + str(node.f_swg) + '\t' + str(node.f_swg_id) + '\t' + str(traj_params) + '\t' + str(h_max) + '\n' 
+            info = str(i) + '\t' + str(node.f_sup) + '\t' + str(node.f_swg) + '\t' + str(node.f_swg_id) + '\t' + str(node.traj_h) + '\n' 
             f.write(info)            
             i += 1
 
