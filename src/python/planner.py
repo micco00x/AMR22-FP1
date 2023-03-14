@@ -461,8 +461,8 @@ def generate_trajectory(f_prev, f_current, map):
             continue
 
         c = f_prev[2]
-        b = (5 * f_prev[2]) + (4 * h) - f_current[2]
-        a = f_current[2] - f_prev[2] - b
+        b = (4 * h) - f_current[2] + f_prev[2]
+        a = (2 * f_current[2]) - (2 * f_prev[2]) - (4 * h)
         foot_size = [0.26, 0.15]
         collision = False
         for s in interval:
