@@ -1,0 +1,8 @@
+world:	tunnel3
+time_max:	20000
+datetime:	2023-03-14_13:04:20
+resolution:	0.02
+initial_f_sup:	[3.3, -0.1, 0.000205, 3.141592653589793]
+initial_f_wg:	[3.3, 0.1, 0.000205, 3.141592653589793]
+goal_region:	(-3.5, 0, 0.00205, 0.4)
+nr_rrt_nodes:	961
