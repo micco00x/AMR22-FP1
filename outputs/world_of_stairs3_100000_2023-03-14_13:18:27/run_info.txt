@@ -1,0 +1,8 @@
+world:	world_of_stairs3
+time_max:	100000
+datetime:	2023-03-14_13:18:27
+resolution:	0.02
+initial_f_sup:	[-2.525, 1.875, 0.000205, 0]
+initial_f_wg:	[-2.525, 1.675, 0.000205, 0]
+goal_region:	(-2.825, 0.47, 1.903, 0.5)
+nr_rrt_nodes:	24311
