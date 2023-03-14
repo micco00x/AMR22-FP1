@@ -20,8 +20,8 @@ if __name__ == '__main__':
             footstep_plan_tsv_file.readline()
             for l in footstep_plan_tsv_file.readlines():
                 idx, q_supp, q_swg, support_foot, h_max = l.rstrip().split('\t')
-                qL = q_supp if support_foot == 'Left' else q_swg
-                qR = q_supp if support_foot == 'Right' else q_swg
+                qL = q_swg if support_foot == 'Left' else q_supp
+                qR = q_swg if support_foot == 'Right' else q_supp
                 v = []
                 v.extend([float(x) for x in qL.strip('[').rstrip(']').split(',')])
                 v.extend([float(x) for x in qR.strip('[').rstrip(']').split(',')])
