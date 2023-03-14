@@ -445,7 +445,7 @@ def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual
 
 
 
-def generate_trajectory(f_prev, f_current, map): # TODO To be fixed
+def generate_trajectory(f_prev, f_current, map):
     h_min = H_MIN #minimum height for the step (iperparametro da definire) [5 cm = ?]
     h_max = H_MAX #maximum height for the step (iperparametro da definire) [30 cm = ?]
 
@@ -453,7 +453,7 @@ def generate_trajectory(f_prev, f_current, map): # TODO To be fixed
     distance = math.sqrt(((f_current[0]-f_prev[0])**2) + ((f_current[1]-f_prev[1])**2))
 
     if not distance:
-        return [h_min]
+        return h_min
     
     for h in np.linspace(h_min, h_max, 6, endpoint= True):
         #check if it can exists
