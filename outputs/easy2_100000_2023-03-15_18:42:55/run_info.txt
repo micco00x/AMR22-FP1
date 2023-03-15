@@ -1,0 +1,8 @@
+world:	easy2
+time_max:	100000
+datetime:	2023-03-15_18:42:55
+resolution:	0.02
+initial_f_sup:	[-2.6, 2, 0.000205, 1.5707963267948966]
+initial_f_wg:	[-2.4, 2, 0.000205, 1.5707963267948966]
+goal_region:	(-1.8, 14.8, 1.00205, 0.5)
+nr_rrt_nodes:	5649
