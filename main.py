@@ -65,6 +65,10 @@ def main(world_json, resolution, time_max, no_display, override):
         f_swg = [-2.2, 1.1, 0.000205, np.pi/2] 
         f_sup = [-2.4, 1.1, 0.000205, np.pi/2]
         goal_region = (-2.3, 10, 0.728, 0.5) # (x, y, z, radius)
+    elif(str(world_json) == 'data/easy2.json'):
+        f_swg = [-2.4, 2, 0.000205, np.pi/2] 
+        f_sup = [-2.6, 2, 0.000205, np.pi/2]
+        goal_region = (-1.8, 14.8, 1.00205, 0.5) # (x, y, z, radius)
     elif(str(world_json) == 'data/tunnel.json'):
         f_swg = [3.3, 0.1, 0.000205, np.pi]
         f_sup = [3.3, -0.1, 0.000205, np.pi]
