@@ -33,13 +33,15 @@ It is an extrension of the popular Elevation Map that allows to represent enviro
 It exploits the information taken from the scene to build a map that stores in its cells a list of tuples, one for each object above the considered cell. 
 Each tuple contains the height of the upper surface and a depth value representing the thickness of the object belonging to the considered cell.
 
-# Motion Planning
+# Offline Motion Planning
 RRT to search for a path to the Goal region.
 
 <div align="center"> 
 <img src="imgs_and_gifs/tunnel_RRTree.png" width="48%"/> 
 <img src="imgs_and_gifs/tunnel_path.png" width="48%"/> 
 </div>
+
+More examples can be found in the [outputs](outputs/) folder, each with its plot.
 
 # How to run
 To launch the planner with default settings:
