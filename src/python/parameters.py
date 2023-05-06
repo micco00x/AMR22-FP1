@@ -13,11 +13,11 @@ K_MU = 1
 K_GAMMA = 0.4
 K_HEIGHT = 1.1
 
-# Original primitives: # TODO modified value. ask for what to use
+# Original primitives:
 # PRIMITIVES_X = [-0.08, 0, 0.08, 0.16, 0.24] # m
 # PRIMITIVES_Y = [ 0.20, 0.30 ] # m
 # PRIMITIVES_THETA = [ 0, 0.4] # rad
-# Primitives for tests:
+
 PRIMITIVES_X = [-0.06, 0, 0.06, 0.10, 0.14, 0.18, 0.23] # m
 PRIMITIVES_Y = [ -0.05, 0, 0.05 ] # m
 PRIMITIVES_THETA = [ -0.2, 0, 0.2 ] # rad

@@ -176,7 +176,7 @@ def retrieve_all_steps(node):
     # print('#\nsup:\t', node.f_sup, '\nswg:\t', node.f_swg)
     steps = [(node.f_swg, node.f_swg_id, node.traj_h)]
     queue = [node]
-    while len(queue): # finchè la coda non è vuota
+    while len(queue): # until the queue is not empty
         node = queue.pop()
         steps.append( (node.f_sup, 'Left' if node.f_swg_id == 'Right' else 'Right', node.traj_h) )
         for child in node.children:
@@ -217,12 +217,12 @@ def save_goal_results_on_tsv(node, output_directory):
 def get_number_of_nodes(root_node):
     n = 0
     queue = [root_node]
-    while len(queue): # finchè la coda non è vuota
+    while len(queue): # until the queue is not empty
         node = queue.pop()
         n += 1
         for child in node.children: queue.append(child)
     return n
 
-# Wrap angle to [-pi, pi):
 def wrap_angle(theta):
+    '''Wrap angle to [-pi, pi)'''
     return math.atan2(math.sin(theta), math.cos(theta))

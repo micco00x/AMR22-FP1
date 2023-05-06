@@ -111,6 +111,7 @@ class MultiLevelSurfaceMap():
     
     
     def as_showable(self):
+        '''for visualization using plotly'''
         x, y, z, depth = self.as_numpy(stride=10)
         scatter = go.Scatter3d( x=x, y=y, z=z, mode='markers', marker=dict(size = 1, color = z, colorscale='Viridis') )
         lines = []
@@ -121,7 +122,7 @@ class MultiLevelSurfaceMap():
     
     
     def plot(self):
-        '''(old) for matplotlib'''
+        '''[DEPRECATED] for visualization using matplotlib'''
         plt.figure('Multi Level Surface Map')
         ax = plt.subplot(projection='3d')
         

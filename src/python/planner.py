@@ -33,8 +33,8 @@ class Node():
         self.parent = parent
         self.children = []
         self.cost = cost
-        self.f_swg_id = f_swg_id # It always starts by moving right foot first
-        self.traj_h = traj_h # Trajectory is the trajectory that , starting from the parent, brings to the actual node
+        self.f_swg_id = f_swg_id 
+        self.traj_h = traj_h 
         self.primitive_catalogue = self.build_primitive_catalogue()
     
     def __eq__(self, other):
@@ -48,7 +48,7 @@ class Node():
         
         return False
     
-    def build_primitive_catalogue(self): # Remember: dependent from the swing foot
+    def build_primitive_catalogue(self):
         catalogue = []
         y_direction = 1 if self.f_swg_id == 'Left' else -1
         rot = get_z_rotation_matrix(self.f_sup[3])
@@ -148,14 +148,8 @@ def RRT(initial_Stance, goal_region, map, time_max):
         v_candidate.parent = v_near
         v_near.children.append(v_candidate)
 
-        """ Step 3) Choosing a parent"""
+        """ Step 3) Choosing a parent """
         # neighbors = neighborhood(v_candidate, rrt_root)
-
-        '''print("current node: ", v_candidate.f_sup, v_candidate.f_swg)
-        print("vicini")
-        for i in neighbors:
-            print(i.f_sup, i.f_swg)
-        print("------------------")'''
 
         candidate_parent = v_near
         # # candidate_cost = cost_of_a_node(v_candidate, candidate_parent, z_range) ### PER ORA IL COSTO PER PASSARE DA UN NODO AD UN ALTRO È 1, VA CAMBIATO, COSÌ È NAIVE
@@ -183,9 +177,8 @@ def RRT(initial_Stance, goal_region, map, time_max):
             goal_nodes.append(v_candidate)
             break
 
-        
 
-        '''Step 4): Rewiring '''
+        """Step 4): Rewiring """
         # # rewiring(v_candidate, rrt_root, map, z_range)
                       
     print('\n### End RRT search ###')
@@ -224,9 +217,6 @@ def v_near_selection(rrt_root, p_rand):
             v_near = node
             
     return best_distance, v_near 
-
-
-
 
 
 def node_to_point_distance(node, point):
@@ -269,53 +259,9 @@ def cost_of_a_node(vertex, candidate_parent, z_range): # TODO add an heuristic
     return cost
 
 
-
-    
-
-
-
-def motion_primitive_selector(node): # TODO maybe remove. No more used
-    """
-    Set of primitives U: 20 possible swing foot landing w.r.t the actual support foot
-    For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
-    The 2 possible angles are: the saggital_axis angle and (the sggital_axis + 30°)
-    The 2 possible side distances are: -12 cm and -24 cm from f_sup along y axis of f_sup, if f_swg is 'Right'
-                                      12 cm and 24 cm  if f_swg is 'Left
-    The 5 possible forward distances are: -10,0,10,20,30 cm along x axis of f_sup
-    U_l = primitives for f_swg_id = 'Left'
-    U_r = primitives for f_swg_id = 'Right
-    (Recall: foot dimensions are 12x7 units)
-    
-    """
-    # swing = node.f_swg
-    support = node.f_sup
-    # sagital_axis = (swing[3] + support[3]) / 2 
-    # x_swg, y_swg, z_swg, theta_swg = swing
-    x_sup, y_sup, z_sup, theta_sup = support
-    y_direction = 1 if node.f_swg_id == 'Left' else -1
-    new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
-
-    # p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
-    # p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
-    # p_th = [-(pi/5),-(pi/6), 0, +(pi/6), +(pi/5)]
-    p_x = PRIMITIVES_X
-    p_y = PRIMITIVES_Y
-    p_th = PRIMITIVES_THETA
-    
-    rot = get_z_rotation_matrix(support[3])
-    delta = [ random.choice(p_x), y_direction*(random.choice(p_y) + L), 0, y_direction*random.choice(p_th)]
-    delta[:-1] = rot.dot(delta[:-1])
-    # new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
-    new_support_foot = [ x_sup + delta[0], y_sup + delta[1], z_sup, theta_sup + delta[3]]
-    
-    new_swing_foot = node.f_sup
-    
-    return new_swing_foot, new_support_foot, new_id
-
-
 def assign_height(support_foot, new_swing_foot_position, map):
     h_prev = support_foot[2]
-    cell = map.query(new_swing_foot_position[0], new_swing_foot_position[1]) #This contains the tuples of obejcts heights
+    cell = map.query(new_swing_foot_position[0], new_swing_foot_position[1]) # cell contains the tuples of obejcts heights
     if cell == None: return None
     higher_limit = None
     for i, object in enumerate(cell): 
@@ -323,14 +269,12 @@ def assign_height(support_foot, new_swing_foot_position, map):
         if (surface_height - h_prev) < DELTA_Z_POS and (surface_height - h_prev) > -DELTA_Z_NEG and (higher_limit == None or object[0] < higher_limit): 
             return surface_height
         higher_limit = min(higher_limit, object[0] - object[1]) if higher_limit!=None else object[0] - object[1]
-    return None # questo caso è una sorta di r2 check solo sull' altezza, vuol dire che non cè nessun altezza possbiile da assegnare
+    return None
 
 
-
-def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE NEL MONDO, POI CAMBIO LE COORDS E VADO NEL
-    #SISTEMA DI RIFERIMENTO DELLA MAPPA E SOLO LA VALUTO QUALE QUADRATINI OCCUPA E POI FACCIO IL CHECK
+def r1_feasibility(f, map):
     """
-    This verifies that the footstep f is fully in contact within a single horizontal patch.
+    Verifies that the footstep f is fully in contact within a single horizontal patch.
     To guarantee this, each cell of the map belonging to or overlapping with the footprint
     must have the same height Z. The foorprint is 24x14 cm , but let's use 13x9 to overcome
     small errors in postion
@@ -354,13 +298,14 @@ def r1_feasibility(f, map):###DA CAMBIAREEEEE: PRIMA CALCOLO DOVE STA IL PIEDE N
             return False
     return True
 
+
 def r2_feasibility( f_prev, f_actual, swg_id):
     """
     Stance feasibility:
-    f_prev: è il piede di support del vecchio nodo 
-    f_actual: è il piede di supporto del nuovo nodo
-    swg_id: swing_id del vecchio nodo. Specifica rispetto a quale piede calcolare la feasibility
-    This verifies that the footstep f is kinematically admissibile from the previous footstep f_prev
+        f_prev: è il piede di support del vecchio nodo 
+        f_actual: è il piede di supporto del nuovo nodo
+        swg_id: swing_id del vecchio nodo. Specifica rispetto a quale piede calcolare la feasibility
+    Verifies that the footstep f is kinematically admissibile from the previous footstep f_prev
     The constraints on the 4 dimensions of a footstep( R3 x SO(2)) are chosen by construction, based on 
     dimensions of the robot and the environment. Deltas are the maximum increments acceptable.
     """
@@ -372,14 +317,6 @@ def r2_feasibility( f_prev, f_actual, swg_id):
     xy = rot_matrix.dot(xy_vector) #- np.array([[0], [L], [0]])
     z = f_actual[2] - f_prev[2]
     theta = f_actual[3] - f_prev[3]
-
-    # xy_vector = np.array([[f_actual[0] - f_prev[0]], [f_actual[1] - f_prev[1]], [0]])
-    #xy_pos = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
-    #    xy_neg = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
-    # if candiate_swg_id == 'Right':
-    #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [l], [0]])
-    # else:
-    #     xy = rot_matrix.dot(xy_vector) + np.array([[0], [-l], [0]])
 
     if ((xy[0] < -DELTA_X_NEG) or (xy[0] > DELTA_X_POS)):
         # print('X fail, difference is',xy[0], '\n')
@@ -402,18 +339,9 @@ def r2_feasibility( f_prev, f_actual, swg_id):
     return True
 
 
-
-
-
-
-
-
-
-#####################################################################################
-#PARTE DI MATTEO
 def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual_sup
     """
-    This verifies that the footstep from j-2 to j is collision free.
+    Verifies that the footstep from j-2 to j is collision free.
     To do so, we have to check that:
         - the body doesn't collide with anything (considering a cilinder a little bit larger than the body, to avoid little measurement errors)
         - the foot trajectory doesn't collide with obstacles
@@ -440,9 +368,6 @@ def r3_feasibility(f_prev, f_actual, map):# Bisogna passare f_pre_swg e f_actual
     #FOOT TRAJECTORY CHECK
     return generate_trajectory(f_prev, f_actual, map)
     # return [0,0,0] # Added to test if generate_trajectory works well (It doesn't for the moment)
-
-
-
 
 
 def generate_trajectory(f_prev, f_current, map):
@@ -485,12 +410,7 @@ def generate_trajectory(f_prev, f_current, map):
 
 
 
-
-
-
-
-
-
+##########################################  Not used stuff section #################################################################
 
 def rewiring(v_new, tree, map, z_range): #v_new è il nodo appena aggiunto8 CHE NOI CHIAMIAMO v_candidate
     # print("nodo: ", tree.children)
@@ -522,16 +442,10 @@ def rewiring(v_new, tree, map, z_range): #v_new è il nodo appena aggiunto8 CHE 
                 #neighbor.trajectory = t_new
                 #set new trajectory on tree
 
-                
-            
-        
 '''new_neighbors = neighborhood(neighbor, tree)
     for j in new_neighbors:
     t_new = generate_trajectory(neighbor.f_swg, j.f_sup) #calcolate new trajectory
      #set new trajectory on tree'''
-
-
-
 
 '''def edge_cost(v_a, v_b):
     c1 = 1  #cost1
@@ -542,5 +456,46 @@ def rewiring(v_new, tree, map, z_range): #v_new è il nodo appena aggiunto8 CHE 
 
 
 
+def motion_primitive_selector(node):
+    """
+    [DEPRECATED] Not used anymore
+    Set of primitives U: 20 possible swing foot landing w.r.t the actual support foot
+    For now lets assume 5 possible forward distances, 2 side distances and 2 possible angles
+    The 2 possible angles are: the saggital_axis angle and (the sggital_axis + 30°)
+    The 2 possible side distances are: -12 cm and -24 cm from f_sup along y axis of f_sup, if f_swg is 'Right'
+                                      12 cm and 24 cm  if f_swg is 'Left
+    The 5 possible forward distances are: -10,0,10,20,30 cm along x axis of f_sup
+    U_l = primitives for f_swg_id = 'Left'
+    U_r = primitives for f_swg_id = 'Right
+    (Recall: foot dimensions are 12x7 units)
+    
+    """
+    # swing = node.f_swg
+    support = node.f_sup
+    # sagital_axis = (swing[3] + support[3]) / 2 
+    # x_swg, y_swg, z_swg, theta_swg = swing
+    x_sup, y_sup, z_sup, theta_sup = support
+    y_direction = 1 if node.f_swg_id == 'Left' else -1
+    new_id = 'Right' if node.f_swg_id == 'Left' else 'Left'
+
+    # p_x = [-0.10, 0, 0.10, 0.20, 0.30, 0.40]
+    # p_y = [ -0.24, -0.12, 0, 0.12, 0.24]
+    # p_th = [-(pi/5),-(pi/6), 0, +(pi/6), +(pi/5)]
+    p_x = PRIMITIVES_X
+    p_y = PRIMITIVES_Y
+    p_th = PRIMITIVES_THETA
+    
+    rot = get_z_rotation_matrix(support[3])
+    delta = [ random.choice(p_x), y_direction*(random.choice(p_y) + L), 0, y_direction*random.choice(p_th)]
+    delta[:-1] = rot.dot(delta[:-1])
+    # new_support_foot = [ x_swg + delta[0], y_swg + delta[1], z_swg, theta_swg + delta[3]]
+    new_support_foot = [ x_sup + delta[0], y_sup + delta[1], z_sup, theta_sup + delta[3]]
+    
+    new_swing_foot = node.f_sup
+    
+    return new_swing_foot, new_support_foot, new_id
+
+
+##########################################  the end  #################################################################
 
 
